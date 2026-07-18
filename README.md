@@ -223,7 +223,7 @@ physics is simple.
 ## Stack
 
 Python 3.9+ · PyTorch (agent networks) · NumPy · PyVista + pyvistaqt ·
-Matplotlib · SciPy (stats) · pytest
+Matplotlib · SciPy (stats)
 
 ## References
 

@@ -19,3 +19,5 @@ class Evolution:
                 x,y,z=np.unravel_index(index,(grid_size, grid_size, grid_size))
                 env.place_block((x,y,z))
             self.scores[i]=0.0
+
+
