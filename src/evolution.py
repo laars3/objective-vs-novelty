@@ -5,12 +5,13 @@ import torch
 
 class Evolution:
     def __init__(self, population_size, grid_size): # creates population of agents all starting with random weights
+        self.grid_size = grid_size
         self.population=[Agent(grid_size) for _ in range(population_size)]
         self.scores=[0]*population_size # scores start at 0, filled in after each agent builds
 
     def run(self, grid_size, steps=20): # runs one full generation: each agent builds a structure and gets scored
         for i, current_agent in enumerate(self.population):
-            env=Environment(grid_size) # fresh grid per agent so they dont share state
+            env=Environment(self.grid_size) # fresh grid per agent so they dont share state
 
             for _ in range(steps):
                 valid = env.valid_move() # recompute valid positions after every placement
