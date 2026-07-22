@@ -2,7 +2,8 @@
 ### Deception as the moderator of novelty search in evolved 3D structure building
 
 **Status: research plan / in progress** -- environment and agent scaffolding exist;
-evolution loop, novelty search, and experiments are being built (see Roadmap).
+evolution loop, novelty search, and experiments are being built. Progress
+tracking, milestones, and the build plan live in [TODO.md](TODO.md).
 
 ---
 
@@ -175,44 +176,7 @@ runs/             # saved results (gitignored except an example run)
 paper/            # the writeup
 ```
 
-## 9. Roadmap
-
-Each milestone ends with something visible or testable.
-
-- [ ] **M0 -- Environment rules + tests.** Base cell, support rule, balance
-  rule, `valid_moves()` mask in `env.py`; pytest cases including "greedy +x
-  placement becomes invalid without counterweight" (the deception mechanism,
-  as a unit test). *Deliverable: green tests.*
-- [ ] **M1 -- One agent builds; viewer shows it.** Mask invalid cells in the
-  agent's logits; render the structure in PyVista/Qt.
-  *Deliverable: screenshot of a real, rule-obeying structure.*
-- [ ] **M2 -- Evolution works on the tower task.** Real scoring, selection,
-  mutation, elitism (scores are currently hard-coded to 0). Tower first -- if
-  fitness doesn't climb on the easy task, the loop is broken, not the theory.
-  *Deliverable: rising fitness curve, 3 seeds.*
-- [ ] **M3 -- Cantilever task + H1 check.** Implement reach scoring; run the
-  objective arm; hand-construct a reference balanced-arm solution; confirm the
-  plateau. *Deliverable: the H1 plot -- objective arm vs. reference line.*
-- [ ] **M4 -- Novelty search.** BC vector, archive, k-NN novelty; `novelty` and
-  `blend` arms; coverage metric. *Deliverable: coverage-over-time plot.*
-- [ ] **M5 -- Full 2×4 experiment + statistics.** 10+ seeds per condition;
-  Mann-Whitney + effect sizes; the headline interaction figure.
-  *Deliverable: the H2/H3 result, whatever it says.*
-- [ ] **M6 -- Explorer polish.** Slider, side-by-side, BC scatter animation, GIFs.
-- [ ] **M7 -- Paper + repro pack.** Writeup; `runs/` to figures script; README
-  results section with the headline figure.
-
-## 10. Stretch Goals
-
-- **MAP-Elites arm** (Mouret & Clune, 2015): keep the best structure per BC
-  cell -- the quality-diversity method this line of work grew into.
-- **BC ablation**: rerun H2 with a deliberately impoverished BC
-  (`[block_count]` only) to demonstrate the known BC-sensitivity critique.
-- **Behavioral strategy analysis**: cluster each arm's final structures and
-  characterize build-order patterns -- "what did each selection pressure
-  learn?", answered at the behavior level.
-
-## 11. Scope & Constraints
+## 9. Scope & Constraints
 
 Deliberately CPU-runnable, solo-buildable: 8³ grid, 40-block budget,
 population ~100, ~200 generations. One run = minutes; the full 2×4×10 sweep is
