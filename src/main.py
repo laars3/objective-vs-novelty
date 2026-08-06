@@ -1,8 +1,7 @@
 from evolution import Evolution
+from visu import render
 
 evolution = Evolution(grid_size=8, population_size=10)
-evolution.run(grid_size=10, steps=20)
+evolution.run(steps=20)
 
-print("done")
-for i, score in enumerate(evolution.scores):
-    print(f"Agent {i}: {score}")
+render(evolution.grids[0])
