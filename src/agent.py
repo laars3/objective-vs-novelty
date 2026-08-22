@@ -22,3 +22,8 @@ class Agent(nn.Module):
             mask[i]=0.0
         _grid=_grid+mask # invalid positions are crushed to near -1e9, argmax will never pick them
         return _grid
+
+    def growth(self, sigma):
+        for param in self.parameters():
+            change=torch.randn_like(param)*sigma
+            param.data += change
