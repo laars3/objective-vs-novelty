@@ -17,6 +17,11 @@ class Environment:
 
     def valid_move(self): # returns list of positions the agent is allowed to build on this step
         valid_blocks=[]
+
+        filled = np.argwhere(self.grid == 1)
+        x_sum = filled[:,0].sum()
+        y_sum= filled[:,1].sum()
+
         for x in range(self.size):
             for y in range(self.size):
                 for z in range(self.size):
@@ -29,9 +34,8 @@ class Environment:
                     supported = any(0 <= nx < self.size and 0 <= ny < self.size and 0 <= nz < self.size and self.grid[nx, ny,nz]==1 for nx,ny,nz in neighbors)
 
                     # balance rule: placing here must keep center of mass within 0.5 of base in x and y
-                    filled = np.argwhere(self.grid==1)
-                    new_mean_x= (filled[:,0].sum()+x)/(len(filled)+1)
-                    new_mean_y=(filled[:,1].sum()+y)/(len(filled)+1)
+                    new_mean_x= (x_sum+x)/(len(filled)+1)
+                    new_mean_y= (y_sum+y)/(len(filled)+1)
                     balanced = abs(new_mean_x-self.base[0])<=0.5 and abs(new_mean_y-self.base[1])<=0.5
 
                     if (supported or (x,y,z) == self.base) and balanced:
