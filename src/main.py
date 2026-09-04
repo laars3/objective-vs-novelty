@@ -1,8 +1,9 @@
 from evolution import Evolution
 from visu import render
+from fitness import reach_score, tower_score
 
-evolution = Evolution(grid_size=8, population_size=10)
-evolution.run(steps=20, sigma=0.1, generations=100)
+evolution = Evolution(grid_size=12, population_size=10, score_func=tower_score)
+evolution.run(steps=20, sigma=0.3, generations=10)
 print(evolution.record)
 
 render(evolution.grids[0])

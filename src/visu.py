@@ -4,6 +4,7 @@ def render(grid):
 
     filled=np.argwhere(grid==1)
     plotter = pv.Plotter()
+    plotter.show_axes()
     plotter.background_color='white'
     for x,y,z in filled:
         cube=pv.Cube(center=(x,y,z))

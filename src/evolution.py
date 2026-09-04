@@ -1,10 +1,10 @@
 from env import Environment
 from agent import Agent
 import numpy as np, torch, random, copy
-from fitness import tower_score
 
 class Evolution:
-    def __init__(self, population_size, grid_size): # creates population of agents all starting with random weights
+    def __init__(self, population_size, grid_size, score_func): # creates population of agents all starting with random weights
+        self.score_func = score_func
         self.grid_size = grid_size
         self.grids=[None]*population_size
         self.population=[Agent(grid_size) for _ in range(population_size)]
@@ -23,7 +23,7 @@ class Evolution:
                     index=torch.argmax(output).item() # pick highest scoring valid position
                     x,y,z=np.unravel_index(index,(self.grid_size, self.grid_size, self.grid_size)) # flat index back to 3D coords
                     env.place_block((x,y,z))
-                self.scores[i]=tower_score(env.grid)
+                self.scores[i]=self.score_func(env.grid)
                 self.grids[i]=env.grid
 
             self.record.append(max(self.scores)) # appends max score
