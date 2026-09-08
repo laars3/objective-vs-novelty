@@ -3,8 +3,11 @@ from agent import Agent
 import numpy as np, torch, random, copy
 
 class Evolution:
-    def __init__(self, population_size, grid_size, score_func): # creates population of agents all starting with random weights
+    def __init__(self, population_size, grid_size, score_func, seed): # creates population of agents all starting with random weights
+        torch.manual_seed(seed)
+        random.seed(seed)
         self.score_func = score_func
+        self.seed = seed
         self.grid_size = grid_size
         self.grids=[None]*population_size
         self.population=[Agent(grid_size) for _ in range(population_size)]

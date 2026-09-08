@@ -27,3 +27,18 @@ class Agent(nn.Module):
         for param in self.parameters():
             change=torch.randn_like(param)*sigma
             param.data += change
+
+class RandomAgent: # random agent
+    def __init__(self, size):
+        self.size = size
+
+    def forward(self, grid, valid_moves):
+
+        scores = torch.full((self.size**3,), -1e9)
+        for x,y,z in valid_moves:
+            i=x*(self.size**2)+(y*self.size)+z
+            scores[i]=torch.rand(()) # random scalar
+        return scores
+
+    def growth(self, sigma):
+        pass # since random, no real growth happens
