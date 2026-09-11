@@ -16,6 +16,7 @@ class Evolution:
         self.gen_best=[]
         self.best_so_far=[]
         self.best =-1
+        self.gen_mean=[]
 
     def run(self, steps=20, sigma=0.1, generations=100): # runs one full generation: each agent builds a structure and gets scored
         for generation in range(generations):
@@ -38,6 +39,8 @@ class Evolution:
                 self.best=maximum
                 self.best_grid=self.grids[self.scores.index(maximum)]
             self.best_so_far.append(self.best)
+
+            self.gen_mean.append((sum(self.scores)/len(self.population)))
 
             ranked=sorted(range(len(self.scores)), key=lambda i: self.scores[i], reverse=True) # ranks scores assigned to index
             keep=len(self.population)//2 # drops lower half of scores
