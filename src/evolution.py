@@ -1,18 +1,21 @@
 from env import Environment
-from agent import Agent
 import numpy as np, torch, random, copy
 
 class Evolution:
-    def __init__(self, population_size, grid_size, score_func, seed): # creates population of agents all starting with random weights
+    def __init__(self, population_size, grid_size, score_func, seed, agent_class): # creates population of agents all starting with random weights
         torch.manual_seed(seed)
         random.seed(seed)
+        self.best_grid=None
+        self.agent_class = agent_class
         self.score_func = score_func
         self.seed = seed
         self.grid_size = grid_size
         self.grids=[None]*population_size
-        self.population=[Agent(grid_size) for _ in range(population_size)]
+        self.population=[agent_class(grid_size) for _ in range(population_size)]
         self.scores=[0]*population_size # scores start at 0, filled in after each agent builds
-        self.record= []
+        self.gen_best=[]
+        self.best_so_far=[]
+        self.best =-1
 
     def run(self, steps=20, sigma=0.1, generations=100): # runs one full generation: each agent builds a structure and gets scored
         for generation in range(generations):
@@ -29,7 +32,12 @@ class Evolution:
                 self.scores[i]=self.score_func(env.grid)
                 self.grids[i]=env.grid
 
-            self.record.append(max(self.scores)) # appends max score
+            maximum=max(self.scores)
+            self.gen_best.append(maximum)
+            if maximum > self.best:
+                self.best=maximum
+                self.best_grid=self.grids[self.scores.index(maximum)]
+            self.best_so_far.append(self.best)
 
             ranked=sorted(range(len(self.scores)), key=lambda i: self.scores[i], reverse=True) # ranks scores assigned to index
             keep=len(self.population)//2 # drops lower half of scores

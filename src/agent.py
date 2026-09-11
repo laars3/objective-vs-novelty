@@ -15,7 +15,7 @@ class Agent(nn.Module):
         _grid=self.layer1(_grid)
         _grid=torch.relu(_grid) # non-linearity so two linear layers dont collapse into one
         _grid=self.layer2(_grid)
-        # build a mask: all positions start at -1e9 (invalid), valid positions get 0 (keeps their score)
+         # build a mask: all positions start at -1e9 (invalid), valid positions get 0 (keeps their score)
         mask = torch.full((self.size**3,), -1e9)
         for x,y,z in valid_moves:
             i=x*(self.size**2)+(y*self.size)+z # convert (x,y,z) back to flat index
