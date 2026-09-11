@@ -17,7 +17,6 @@ class Environment:
 
     def valid_move(self): # returns list of positions the agent is allowed to build on this step
         valid_blocks=[]
-
         filled = np.argwhere(self.grid == 1)
         x_sum = filled[:,0].sum()
         y_sum= filled[:,1].sum()
@@ -27,6 +26,8 @@ class Environment:
                 for z in range(self.size):
                     if self.grid[x,y,z]==1: # skip cells that are already filled
                         continue
+
+                    is_base = (x,y,z)==self.base
 
                     # all six face-adjacent neighbors of this cell
                     neighbors = [(x-1,y,z), (x+1,y,z), (x, y-1,z), (x, y+1, z), (x,y,z-1), (x,y,z+1)]
@@ -38,7 +39,35 @@ class Environment:
                     new_mean_y= (y_sum+y)/(len(filled)+1)
                     balanced = abs(new_mean_x-self.base[0])<=0.5 and abs(new_mean_y-self.base[1])<=0.5
 
-                    if (supported or (x,y,z) == self.base) and balanced:
+                    if (supported or is_base) and balanced and (z >0 or is_base):
                         valid_blocks.append((x,y,z))
 
         return valid_blocks
+
+    def best_possible_bridge(self,steps): # find best possible bridge reach to compare
+        grid=self.grid
+        max_x_grid = self.size-1
+        min_x_grid =0
+        y=self.base[1]
+        z=1
+
+        self.place_block((self.base[0], self.base[1], 1))
+        steps=steps-1
+        while steps:
+            filled = np.argwhere(grid == 1)
+
+            valid = self.valid_move()
+            max_x = filled[:, 0].max()
+            min_x = filled[:, 0].min()
+
+            if max_x_grid == max_x:
+                break
+            if ((max_x + 1, y, z)) in valid:
+                self.place_block((max_x + 1, y, z))
+            elif ((min_x - 1, y, z)) in valid:
+                self.place_block((min_x-1, y, z))
+            else:
+                break
+            steps=steps-1
+
+        return grid
