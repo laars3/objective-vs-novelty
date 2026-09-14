@@ -19,8 +19,8 @@ optimization?
 Three hypotheses, in the order they have to be established:
 
 H1. On the bridge task, objective search plateaus below what is actually
-achievable. Confirmed on one seed, see Results. Without this the rest is
-meaningless, since a low score could just mean the budget ran out.
+achievable. Not settled yet, see Results. Without this the rest is meaningless,
+since a low score could just mean the budget ran out.
 
 H2. On the bridge task, novelty search ends up ahead of objective search.
 Mann-Whitney U over 10+ seeds, with effect size.
@@ -35,9 +35,11 @@ null result on H2 is still worth reporting if H1 holds.
 
 ### Environment
 
-An N x N x N grid with one base cell fixed at the centre of the ground plane, at
-`(N//2, N//2, 0)`. Agents place one block per step up to a budget of B blocks. A
-placement is legal only if all three hold:
+A voxel grid, currently 24 x 8 x 12. It does not have to be cubic, and it should
+not be: the bridge ceiling depends only on the x dimension, while y and z cost
+compute without raising it. One base cell is fixed at the centre of the ground
+plane, at `(nx//2, ny//2, 0)`. Agents place one block per step up to a budget of
+B blocks. A placement is legal only if all three hold:
 
 1. Support. The cell is empty and touches an existing block face-on, or it's the
    base. The structure is one connected thing grown out from the base.
@@ -57,17 +59,20 @@ exists here can't come from agents over-extending and toppling.
 Bridge, the deceptive one. Score is `max(x) - x_base`, reach in +x only. One
 block past the base uses up the half-block of slack, and nothing further out is
 legal until ballast goes on the -x side. Those ballast blocks never raise the
-score themselves.
+score themselves. Ceiling is `nx - 1 - nx//2`, so 11 on the current grid.
 
 Tower, the control. Score is `max(z)`. A column straight up doesn't move the
-centre of mass at all, so stacking is always legal and greedy works.
+centre of mass at all, so stacking is always legal and greedy works. Ceiling is
+`nz - 1`, also 11, so both tasks now span the same range.
 
 Same environment, same agents, same budget. Only the scoring changes.
 
 ### Agents
 
-`Agent` is an MLP, `N^3 -> 128 -> N^3`, mapping the grid to a score per cell.
-Illegal cells get masked to -1e9 and the argmax gets placed.
+`Agent` is an MLP, `cells -> 128 -> cells`, where cells is `nx * ny * nz`. It
+maps the grid to a score per cell. Illegal cells get masked to -1e9 and the
+argmax gets placed. On the current grid that's 2,304 cells and about 590K
+parameters.
 
 `RandomAgent` has no policy at all. It hands out uniform random scores to the
 legal cells, which makes the argmax a uniform random legal placement. This is
@@ -117,12 +122,14 @@ Three series logged per generation:
 
 ## Where I am
 
-M0 through M3 done. H1 confirmed on one seed.
+M0 through M2 done. M3 in progress: the grid was rebuilt and the H1 numbers are
+being regenerated on it.
 
-- `src/env.py`, grid, base, support, balance, ground rule, `valid_move()`. Also
-  `best_possible_bridge(steps)`, which builds the optimal alternating cantilever
-  using `valid_move()` as the judge, so whatever it returns is provably legal.
-  Hits the ceiling: 5 at N=12 using 11 of 20 blocks, 7 at N=16.
+- `src/env.py`, grid, base, support, balance, ground rule, `valid_move()`. Takes
+  a shape tuple so the grid can be non-cubic. Also `best_possible_bridge(steps)`,
+  which builds the optimal alternating cantilever using `valid_move()` as the
+  judge, so whatever it returns is provably legal. On the current grid it reaches
+  the ceiling of 11 using 23 of 40 blocks.
 - `src/agent.py`, `Agent` and `RandomAgent`, plus `growth(sigma)` for mutation.
 - `src/fitness.py`, `tower_score` and `bridge_score`.
 - `src/evolution.py`, the loop. Takes `score_func`, `agent_class`, `seed`. Logs
@@ -134,41 +141,57 @@ Not built yet: novelty search, the archive, run logging, configs, tests, paper.
 
 ## Results so far
 
-N=12 with the base at x=6, 20-block budget, population 50, 100 generations,
+Current grid 24 x 8 x 12, base at x=12, 40-block budget, population 50,
 sigma=0.002, seed 0.
 
-The reference solution reaches 5 using 11 of the 20 blocks, so the budget isn't
-the constraint and a plateau below 5 can't be blamed on running out of blocks.
+The reference reaches the ceiling of 11 using 23 of the 40 blocks, so the budget
+isn't the constraint and a plateau below 11 can't be blamed on running out of
+blocks.
 
-| arm | population mean | best over 5,000 structures |
+| arm | population mean | best over 2,500 structures |
 |-----|-----------------|----------------------------|
-| random | 1.93 | 5, one single draw |
-| objective | 3.96 | 4 |
-| reference | | 5 |
+| random | 2.8 | 7 |
+| objective (50 gens) | 6.3 and still rising | 8 |
+| reference | | 11 |
 
-The objective arm does learn. Mean goes from 2.26 to about 3.9 by generation 23,
-roughly double random's 1.93. Then it doesn't move for the remaining 77
-generations, and it never once produces a 5 across 5,000 structures. H1 holds.
+The objective arm's `gen_best` went 5 at generation 0, then 6, 7, and 8 by
+generation 32. That matters more than the number itself: it is the first time in
+this project that evolution produced anything better than its own initial random
+draw. A 200-generation run is going to find where it actually plateaus, since 50
+generations stopped while the mean was still climbing.
 
-Odd and interesting: random did find a 5. Converging early made objective search
-worse than chance at locating the optimum. That's the mechanism H2 is supposed to
-depend on, showing up before novelty search even exists.
+The structures look right now too. The best one was 41 blocks with x running 8 to
+20: a dense mass of 28 blocks around and behind the base, and a thin 13-block arm
+reaching out. That's an actual cantilever. `mean(x)` was 12.27 against a limit of
+12.5, so only 0.23 of the balance allowance went unused.
 
-Why it fails is not what I predicted. Looking at the best structure it produced,
-12 of its 21 blocks sit at x < 6, so it found counterweighting fine. It just
-spends the budget badly:
+Also worth keeping for the writeup: best-ever separates the two arms by one point
+(8 against 7) while the mean separates them by three and a half (6.3 against 2.8).
+The random arm found a 7 purely by drawing 2,500 structures. That's the clearest
+demonstration I have that best-ever measures sampling volume rather than search
+quality.
 
-- mean(x) ends at 5.57 when balance allows 6.5, so it leaves nearly a whole block
-  of reach unused
-- blocks scatter across y = 4 to 9, where they do nothing for the score
-- 21 blocks for a reach of 4, against the reference's 11 blocks for 5
+### What the old 12 x 12 x 12 grid taught me
 
-Why it stops: at the plateau about 48 of 50 agents score exactly 4. Selection
-sorts by score and keeps the top half, so with everyone tied the ranking is
-arbitrary and there's no pressure left. The search just wanders. That's a
-consequence of an integer objective with six possible values.
+Worth recording because it nearly sank the project and the diagnosis took a while.
 
-Single seed so far. Seeds 1 and 2 pending.
+On the cubic grid the bridge ceiling was 5, and a freshly initialized network
+could reach it. Seed 0 started with a best of 4 and finished at 4. Seed 1 started
+with a best of 5 and finished at 5. In both cases the final best equalled
+generation 0's best, so across 5,000 structures per run not one mutated child
+ever beat the initial draw.
+
+The sigma = 0 control confirmed it. With mutation switched off entirely the mean
+converged to exactly generation 0's best, 4.00 on seed 0 and 5.00 on seed 1.
+Turning mutation back on made the mean slightly worse, 3.96 and 4.90, because
+children drift off the optimum. So mutation was not just useless, it was mildly
+harmful, and the whole thing was a max-finder over the initial population.
+
+The cause was the coarse objective. Six possible scores meant the population
+collapsed onto one value within about 25 generations, after which selection was
+ranking tied agents by list index. Widening x fixed it by giving the score twelve
+possible values and pushing the ceiling well above what a lucky initialization
+reaches.
 
 ## Things I learned that cost time
 
@@ -178,41 +201,49 @@ brand new random network. If a fitness curve goes flat, check sigma against
 weight scale first.
 
 Best-ever is a bad way to compare arms. It mostly measures how much you sampled.
-Random hit the optimum once in 5,000 draws while its mean never budged off 1.93.
 Use `gen_mean`.
 
-Selection pressure dies at the plateau. Six possible scores means the population
-collapses onto one value, `sorted()` then breaks ties by index, and selection
-becomes arbitrary.
+If the final best equals generation 0's best, the search is doing nothing and
+you are looking at selection over the initial draw. The sigma = 0 control is the
+cheap way to prove it either way.
+
+Headroom matters more than step size. When the ceiling sits close to what random
+initialization reaches, no amount of sigma tuning helps, because the population
+ties on one score and selection stops discriminating.
 
 The deception isn't "refuses the enabling move". Objective search places
-counterweights freely. It fails on efficiency.
+counterweights freely. It fails on efficiency, spending blocks that buy no reach.
 
 Masking removes the textbook deception. Agents can't make illegal moves, so if I
 ever redesign this, the deception has to live somewhere an agent can actually go
 wrong.
 
+Cutting the block budget is the wrong way to make the task harder. It makes
+agents fail by starvation rather than by deception, and it destroys the reference
+solution's argument, since the reference needs slack to prove a better structure
+was affordable.
+
 ## Next
 
-1. Confirm H1 on seeds 1 and 2. Same settings, bridge task, `Agent`. Only need
-   the `gen_mean` plateau and final `best_so_far` from each. Use
-   `generations=50`, nothing has ever happened after 25.
-2. Then the infrastructure below, before novelty search.
+1. Finish the 200-generation objective run on seed 0 and find where it plateaus.
+   That number against the reference's 11 is the H1 test.
+2. Repeat on seeds 1 and 2.
+3. Then the infrastructure below, before novelty search.
 
 Infrastructure, before M4:
 
+- [ ] Optimize `valid_move()`. It scans all `nx*ny*nz` cells per placement and is
+  most of the runtime. Support means only cells next to an existing block can
+  ever be legal, so the real candidate set is bounded by structure size, a couple
+  of hundred at B=40, not grid size, 2,304 now. Without this the full sweep is
+  100 agents x 200 generations x 40 steps x 80 runs, roughly 85 hours. With it,
+  closer to 8. This is now the thing gating M5.
 - [ ] Run logging. Runs currently vanish on exit. Write seed, arm, task, config,
   the three series, and block placements to `runs/`. Log placements rather than
   final grids, the ordered list rebuilds the grid and also drives build playback
-  later. Already lost several runs to wrong arm, wrong task, or an unprinted
-  metric.
-- [ ] Config-driven runs. One YAML per condition so the 80-run sweep is a script
-  instead of 80 hand-edits of `main.py`.
-- [ ] Optimize `valid_move()`. It scans all N^3 cells per placement and is about
-  98% of runtime, way more than the network. Support means only cells next to an
-  existing block can ever be legal, so the real candidate set is bounded by
-  structure size, a few hundred at B=40, not grid size, 4,096 at N=16. This is
-  what makes the full sweep an overnight job.
+  later. `tee` to a file is the stopgap.
+- [ ] Config-driven runs. One YAML per condition so the sweep is a script instead
+  of 80 hand-edits of `main.py`.
 - [ ] Some pytest cases. Env invariants, plus "greedy +x becomes illegal without
   a counterweight" as the deception mechanism written as a test.
 
@@ -220,13 +251,16 @@ Infrastructure, before M4:
 
 - [x] M0, environment rules. Tests still missing.
 - [x] M1, one agent builds, viewer shows it.
-- [x] M2, evolution works. Checked against the random baseline.
-- [x] M3, bridge task and the H1 check. Reference built and verified, objective
-  arm plateaus at 4 against an achievable 5. Multi-seed pending.
+- [x] M2, evolution works. Objective arm's mean is more than double the random
+  baseline's, and mutation now improves on its initial draw.
+- [ ] M3, bridge task and the H1 check. Reference built and verified at 11. The
+  objective arm's plateau is being measured on the new grid.
 - [ ] M4, novelty search. BC vector, archive, k-NN novelty, the novelty and
-  blend arms, coverage metric. Note `score_func(grid)` can't express novelty,
-  which needs the whole population plus archive, so the scoring path has to be
-  restructured to score a generation at a time.
+  blend arms, coverage metric. Two things to watch: `score_func(grid)` can't
+  express novelty, which needs the whole population plus archive, so the scoring
+  path has to be restructured to score a generation at a time. And the blend arm
+  mixes an integer 0 to 11 with a Euclidean distance around 0 to 2, so both need
+  normalising or the blend is just the objective.
 - [ ] M5, the full 2x4 with 10+ seeds, Mann-Whitney and Cliff's delta,
   Holm-corrected, and the headline figure.
 - [ ] M6, explorer. Build playback from logged placements, generation slider,
@@ -241,28 +275,31 @@ Settled:
   base, so the bridge task builds a real cantilever.
 - The deceptive task is called `bridge` in code. It's a cantilever in the
   engineering sense, which the paper should say once.
+- Non-cubic grid, 24 x 8 x 12. Bridge ceiling 11, tower ceiling 11, so both
+  tasks span the same range. Cheaper than going cubic to N=24, which would have
+  cost eight times the compute for the same bridge ceiling.
+- Block budget stays generous at 40. Tightening it would make agents fail by
+  starvation rather than deception.
 
 Still open:
 
 - Rename `Agent`. It's vague, but `ObjectiveAgent` would be wrong since novelty
   and blend use the same class. `NetworkAgent` or `MLPAgent` names what it is
   instead of which arm uses it. Arm names belong in run configs.
-- Move to N=16, B=40 for the real experiment. `main.py` is on N=12 with 20 steps.
-  Do it after the `valid_move()` optimization makes the bigger grid affordable.
-- Tie-breaking in selection. Pressure vanishes once everyone scores the same. A
-  secondary tie-break would restore a gradient but changes the experiment, and
-  would have to apply identically to every arm.
-- Symmetric ceilings. Tower tops out at N-1, bridge at about N/2 - 1. Not
-  required since comparisons are within-task, but a non-cubic grid, wide in x and
-  short in z, would even them out. Costs a refactor of `Agent` (`size**3`),
-  `env.py`, and `unravel_index`. Deferred.
+- Tie-breaking in selection. Scores are integers, so mutation gets no partial
+  credit for progress between steps. A continuous secondary term, `mean(x)` for
+  bridge and centre-of-mass height for tower, would give selection something to
+  see. Held back for now because the wider grid may have supplied enough headroom
+  on its own. Would have to be applied identically to every arm.
+- Population size for the real runs. Currently 50, the plan says 100. Bigger
+  populations converge faster mostly by containing more good initial draws, so
+  it is not free of the confound above.
 
 ## Plan for the experiment
 
 2 x 4: {bridge, tower} x {random, objective, novelty, blend}.
 
-Comparisons run within a task, across arms, never between tasks. Tower scores go
-up to N-1 and bridge only to about N/2 - 1, so the two aren't on the same scale.
+Comparisons run within a task, across arms, never between tasks.
 
 - 10+ seeds per condition, so 80+ runs, everything derived from one logged seed
 - population 100, ~200 generations, sigma fixed and identical across arms
@@ -282,16 +319,18 @@ One small ablation planned: archive on/off for the novelty arm on bridge.
 
 - No physics. Balance is a centre-of-mass rule. Deliberate, it's what makes the
   reference solution constructible by hand.
-- Selection pressure collapses under ties, as above.
+- Objectives are coarse integers, so mutation gets no partial credit and ties
+  between runs are common. Effect sizes reported partly for this reason.
 - Best-ever is confounded by sampling volume.
-- Objectives are coarse integers, so ties between runs are common and the stats
-  lose power. Effect sizes reported partly for this reason.
+- Outcomes are sensitive to the initial random population, which on the old grid
+  decided the run entirely. The wider grid reduces this but does not remove it,
+  which is why seeds are reported rather than single runs.
 - `valid_move()` dominates runtime.
 - `Agent` is deterministic, so one network gives exactly one structure. Makes
   evaluation noise-free but means no exploration within a lifetime.
-- At N=16 each agent is ~1.05M parameters evolved by Gaussian mutation with a
-  population of 100. That's demanding, and the random arm is partly there to
-  check whether any arm beats chance at all.
+- Weight-space evolution on ~590K parameters with a population of 50 to 100 is a
+  demanding regime, and the random arm exists partly to check whether any arm
+  beats chance at all.
 - One BC, results may hinge on it. A BC ablation is a stretch goal.
 
 ## Running it
@@ -300,7 +339,13 @@ One small ablation planned: archive on/off for the novelty arm on bridge.
 python src/main.py
 ```
 
-Runs one experiment and renders the best structure it found.
+Runs one experiment and renders the best structure it found. Pipe through `tee`
+to keep the output:
+
+```
+mkdir -p runs
+python src/main.py | tee runs/objective_seed0.txt
+```
 
 ## Stack
 
