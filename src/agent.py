@@ -2,11 +2,12 @@ import torch
 import torch.nn as nn
 
 class Agent(nn.Module):
-    def __init__(self, size):
+    def __init__(self, shape):
         super().__init__()
-        self.size=size
-        self.layer1=nn.Linear(size**3, 128) # squash grid into 128 hidden features
-        self.layer2=nn.Linear(128, size**3) # expand back to a score for every grid position
+        self.shape=shape
+        self.cells=shape[0]*shape[1]*shape[2] # one network input and one output per grid cell
+        self.layer1=nn.Linear(self.cells, 128) # squash grid into 128 hidden features
+        self.layer2=nn.Linear(128, self.cells) # expand back to a score for every grid position
         # layer sizes can be tuned later -- passing as args would make ablations easier
 
     def forward(self, grid, valid_moves):
@@ -15,10 +16,11 @@ class Agent(nn.Module):
         _grid=self.layer1(_grid)
         _grid=torch.relu(_grid) # non-linearity so two linear layers dont collapse into one
         _grid=self.layer2(_grid)
-         # build a mask: all positions start at -1e9 (invalid), valid positions get 0 (keeps their score)
-        mask = torch.full((self.size**3,), -1e9)
+        # build a mask: all positions start at -1e9 (invalid), valid positions get 0 (keeps their score)
+        mask = torch.full((self.cells,), -1e9)
+        ny,nz=self.shape[1],self.shape[2]
         for x,y,z in valid_moves:
-            i=x*(self.size**2)+(y*self.size)+z # convert (x,y,z) back to flat index
+            i=x*(ny*nz)+(y*nz)+z # (x,y,z) to flat index, C order so it matches np.unravel_index
             mask[i]=0.0
         _grid=_grid+mask # invalid positions are crushed to near -1e9, argmax will never pick them
         return _grid
@@ -29,14 +31,16 @@ class Agent(nn.Module):
             param.data += change
 
 class RandomAgent: # random agent
-    def __init__(self, size):
-        self.size = size
+    def __init__(self, shape):
+        self.shape = shape
+        self.cells = shape[0]*shape[1]*shape[2]
 
     def forward(self, grid, valid_moves):
 
-        scores = torch.full((self.size**3,), -1e9)
+        scores = torch.full((self.cells,), -1e9)
+        ny,nz=self.shape[1],self.shape[2]
         for x,y,z in valid_moves:
-            i=x*(self.size**2)+(y*self.size)+z
+            i=x*(ny*nz)+(y*nz)+z
             scores[i]=torch.rand(()) # random scalar
         return scores
 
