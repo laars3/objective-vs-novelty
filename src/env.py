@@ -12,8 +12,12 @@ class Environment:
         self.grid=np.zeros(self.shape, dtype=np.int8)
         self.place_block(self.base)
 
-    def place_block(self,coordinates): # sets a single cell to 1 (occupied)
+    def place_block(self,coordinates): # checks if after cell placement the structure is stable, if not set back to 0, else continue
         self.grid[coordinates]=1
+        stable = self.is_stable()
+        if not stable:
+            self.grid[coordinates]=0
+        return stable
 
     def valid_move(self): # returns list of positions the agent is allowed to build on this step
         valid_blocks=[]
@@ -54,14 +58,13 @@ class Environment:
 
             if max_x_grid == max_x:
                 break
-            if ((max_x + 1, y, z)) in valid:
-                self.place_block((max_x + 1, y, z))
-            elif ((min_x - 1, y, z)) in valid:
-                self.place_block((min_x-1, y, z))
+            if ((max_x + 1, y, z)) in valid and self.place_block((max_x + 1, y, z)):
+                pass
+            elif ((min_x - 1, y, z)) in valid and self.place_block((min_x - 1, y, z)):
+                pass
             else:
                 break
             steps=steps-1
-
         return grid
 
     def is_stable(self):
@@ -70,7 +73,7 @@ class Environment:
         x_mean = filled[:, 0].mean()
         y_mean = filled[:, 1].mean()
 
-        # balance rule: placing here must keep center of mass within 0.5 of base in x and y
+        # balance rule checks if structure collapses if the mean deviates more than 0.5 off base
         balanced = abs(x_mean - self.base[0]) <= 0.5 and abs(y_mean - self.base[1]) <= 0.5
 
         return balanced

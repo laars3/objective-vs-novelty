@@ -29,7 +29,8 @@ class Evolution:
                     output=current_agent.forward(env.grid, valid)
                     index=torch.argmax(output).item() # pick highest scoring valid position
                     x,y,z=np.unravel_index(index, self.grid_shape) # flat index back to 3D coords
-                    env.place_block((x,y,z))
+                    if not env.place_block((x,y,z)):
+                        break
                 self.scores[i]=self.score_func(env.grid)
                 self.grids[i]=env.grid
 
