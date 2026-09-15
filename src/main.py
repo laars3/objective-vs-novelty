@@ -4,8 +4,8 @@ from fitness import bridge_score, tower_score
 from agent import RandomAgent, Agent
 import numpy as np
 
-evolution = Evolution(grid_shape=(24,8,12), population_size=50, score_func=bridge_score, seed=0, agent_class=Agent)
-evolution.run(steps=40, sigma=0.002, generations=200)
+evolution = Evolution(grid_shape=(24,8,12), population_size=10, score_func=bridge_score, seed=1, agent_class=RandomAgent)
+evolution.run(steps=40, sigma=0.002, generations=5)
 
 print("best so far: ",evolution.best_so_far)
 print("np.argwhere=", np.argwhere(evolution.best_grid==1))
