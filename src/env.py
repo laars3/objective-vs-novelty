@@ -17,9 +17,6 @@ class Environment:
 
     def valid_move(self): # returns list of positions the agent is allowed to build on this step
         valid_blocks=[]
-        filled = np.argwhere(self.grid == 1)
-        x_sum = filled[:,0].sum()
-        y_sum= filled[:,1].sum()
 
         for x in range(self.shape[0]):
             for y in range(self.shape[1]):
@@ -34,12 +31,7 @@ class Environment:
                     # support rule: at least one neighbor must be inside the grid and already filled
                     supported = any(0 <= nx < self.shape[0] and 0 <= ny < self.shape[1] and 0 <= nz < self.shape[2] and self.grid[nx, ny,nz]==1 for nx,ny,nz in neighbors)
 
-                    # balance rule: placing here must keep center of mass within 0.5 of base in x and y
-                    new_mean_x= (x_sum+x)/(len(filled)+1)
-                    new_mean_y= (y_sum+y)/(len(filled)+1)
-                    balanced = abs(new_mean_x-self.base[0])<=0.5 and abs(new_mean_y-self.base[1])<=0.5
-
-                    if (supported or is_base) and balanced and (z >0 or is_base):
+                    if (supported or is_base) and (z >0 or is_base):
                         valid_blocks.append((x,y,z))
 
         return valid_blocks
@@ -71,3 +63,14 @@ class Environment:
             steps=steps-1
 
         return grid
+
+    def is_stable(self):
+        filled = np.argwhere(self.grid == 1)
+
+        x_mean = filled[:, 0].mean()
+        y_mean = filled[:, 1].mean()
+
+        # balance rule: placing here must keep center of mass within 0.5 of base in x and y
+        balanced = abs(x_mean - self.base[0]) <= 0.5 and abs(y_mean - self.base[1]) <= 0.5
+
+        return balanced
