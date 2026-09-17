@@ -102,15 +102,42 @@ mutation plus elitism, meaning the best agent is copied over untouched.
 
 ### Behaviour characterization
 
-Each structure is summarised as 5 numbers:
-`[block_count, max_height, max_radial_reach, mean_horizontal_offset, com_height]`,
-each normalised to [0,1]. Novelty is the mean k-NN distance (k=15) against the
-population plus an archive, and anything novel enough is added to the archive.
+`bc(grid, budget)` in `fitness.py` summarises a structure as 5 numbers, each on
+[0, 1]:
+
+| | what it measures | denominator |
+|---|---|---|
+| `block_count` | how much it built | `budget + 1`, the base included |
+| `max_height` | how tall | `nz - 1` |
+| `com_height` | where the mass sits vertically | `nz - 1` |
+| `max_reach` | how far the furthest block is from the base | corner distance |
+| `com_reach` | how far the average block is | corner distance |
+
+The two reach dimensions come from `np.hypot(x - x_base, y - y_base)`, one
+distance per block. Horizontal only, since height is already covered, and
+unsigned, so a structure stretching into -x counts as reaching far even though it
+scores nothing. `max_reach` and `com_reach` together separate a thin arm poking
+out of a compact body from a structure with mass spread all the way out, which is
+exactly how the reference differs from the agents.
+
+Normalisation divides by what is achievable, not what is conceivable.
+Dividing `block_count` by the 2,304 grid cells would put every structure in
+[0, 0.018] and that dimension would contribute nothing to any distance. For the
+same reason mean x is not usable: balance pins it to within 0.5 of the base, so
+it would be near constant across every structure in the experiment.
+
+Novelty is the mean k-NN distance (k=15) against the population plus an archive,
+and anything novel enough is added to the archive.
 
 `max_height` is the tower objective, so the BC overlaps the objectives. That is
 standard: Lehman and Stanley's maze BC was the robot's final position, which
 contained their objective. Results are known to hinge on the BC (Pugh et al.),
 so it is fixed before any experiments and shared across arms and tasks.
+
+Sanity checks: a column straight up from the base gives `max_reach` and
+`com_reach` of 0 and `max_height` of 1. A block in the far grid corner gives
+`max_reach` of exactly 1. A tower and the reference cantilever sit 1.41 apart in
+a space whose maximum distance is 2.24.
 
 ### Metrics
 
@@ -123,28 +150,18 @@ Three series per generation:
 Compare arms on `gen_mean`. Best-ever measures sampling volume, not search
 quality, see Results.
 
-## Where I am
+## Implemented
 
-M0 to M3 done. H1 holds under the new rules: objective search plateaus at 6
-against an achievable 11.
-
-- `src/env.py`, takes a shape tuple so the grid can be non-cubic. `valid_move()`
-  checks support and the ground rule only. `is_stable()` checks whether the
-  structure's centre of mass is over the base. `place_block()` places, checks,
-  and on failure undoes the block and returns False, so the grid always holds the
-  last stable state; the build loop in `evolution.py` breaks on that.
-  Also `best_possible_bridge(steps)`,
-  which builds the optimal alternating cantilever using `valid_move()` as the
-  judge, so what it returns is provably legal. Reaches 11 using 23 of 40 blocks.
-- `src/agent.py`, `Agent` and `RandomAgent`, plus `growth(sigma)` for mutation.
-- `src/fitness.py`, `tower_score` and `bridge_score`.
-- `src/evolution.py`, the loop. Takes `score_func`, `agent_class`, `seed`. Logs
-  the three series plus `best_grid`.
-- `src/visu.py`, `render(grid)`, one glyph mesh coloured by role: blue behind the
-  base, grey at the base column, red ahead of it.
-- `src/main.py`, runs one experiment, renders the best structure.
-
-Not built: novelty search, the archive, run logging, configs, tests, paper.
+- `env.py` : grid takes a shape tuple so it can be non-cubic. `valid_move()`
+  checks support and the ground rule. `is_stable()` checks the centre of mass.
+  `place_block()` undoes the block and returns False if the structure topples.
+  `best_possible_bridge()` builds the reference, 11 using 23 of 40 blocks.
+- `agent.py` : `Agent` (MLP), `RandomAgent`, `growth(sigma)` for mutation.
+- `fitness.py` : `tower_score`, `bridge_score`, `bc(grid, budget)`.
+- `evolution.py` : the loop, seeding, `score_func` and `agent_class` parameters,
+  logs `gen_best`, `best_so_far`, `gen_mean`, `best_grid`.
+- `visu.py` : `render(grid)`, glyph mesh coloured by position relative to the base.
+- `main.py` : runs one experiment, renders the result.
 
 ## Results
 
@@ -265,56 +282,28 @@ Cutting the block budget is the wrong way to make a task harder. Agents then fai
 by starvation rather than deception, and it destroys the reference solution's
 argument, which needs slack to prove a better structure was affordable.
 
-## Next
+## To do
 
-1. Seeds 1 and 2 for the objective arm, to confirm the plateau at 6.
-2. Visualisation: save figures offscreen with a fixed camera, then side by side
-   against the reference, then build playback as a GIF once placements are
-   logged.
-3. Then M4.
-
-Infrastructure, before M4:
-
-- [ ] Optimize `valid_move()`. It scans all `nx*ny*nz` cells per placement and is
-  most of the runtime. Only cells next to an existing block can ever be legal, so
-  the candidate set is bounded by structure size, a couple of hundred at B=40,
-  not grid size, 2,304 now. Without it the full sweep is 100 agents x 200
-  generations x 40 steps x 80 runs, roughly 85 hours. With it, about 8. This
-  gates M5.
-- [ ] Run logging. Runs vanish on exit. Write seed, arm, task, config, the three
-  series, and block placements to `runs/`. Log placements rather than final
-  grids, the ordered list rebuilds the grid and drives build playback later.
-  `tee` is the stopgap.
-- [ ] Print the config at the top of every run. Four runs have gone wrong from
-  the wrong arm, wrong task, or a missing metric, and none of them said what they
-  were on their own output.
-- [ ] Config-driven runs. One YAML per condition so the sweep is a script instead
-  of 80 hand-edits of `main.py`.
-- [ ] Some pytest cases. Env invariants, plus a test that greedy +x extension
-  topples the structure without a counterweight.
-
-## Milestones
-
-- [x] M0, environment rules. Tests still missing.
-- [x] M1, one agent builds, viewer shows it.
-- [x] M2, evolution works. Objective arm climbs 5 to 11 while the random floor
-  sits at 2.80, so the search beats chance by a wide margin.
-- [x] M3, bridge task and the H1 check. Reference verified at 11. H1 failed under
-  the old rules, since objective search reached 11 too, so balance was reworked
-  from a mask into a failure condition. Under the new rules objective search
-  plateaus at 6, which is H1. Needs the random floor and two more seeds before it
-  is settled.
-- [ ] M4, novelty search. BC vector, archive, k-NN novelty, the novelty and blend
-  arms, coverage metric. Two traps: `score_func(grid)` cannot express novelty,
-  which needs the whole population plus archive, so the scoring path has to score
-  a generation at a time. And the blend arm mixes an integer 0 to 11 with a
-  Euclidean distance around 0 to 2, so both need normalising or the blend is just
-  the objective.
-- [ ] M5, the full 2x4 with 10+ seeds, Mann-Whitney and Cliff's delta,
-  Holm-corrected, and the headline figure.
-- [ ] M6, explorer. Build playback from logged placements, generation slider,
-  side-by-side arms, BC scatter, GIF export.
-- [ ] M7, paper in LaTeX plus a runs-to-figures script.
+- archive: store BCs above a novelty threshold, k-NN queries
+- k-NN novelty scoring
+- restructure the scoring path to score a generation at a time, `score_func(grid)`
+  cannot express novelty
+- novelty and blend arms. blend mixes an integer 0 to 11 with a distance around
+  0 to 2, so both need normalising or it is just the objective
+- coverage metric
+- run logging to `runs/`: seed, arm, task, config, the three series, block
+  placements. log placements not grids, the order rebuilds the grid and drives
+  playback later
+- print the config at the top of every run. four runs have gone wrong from the
+  wrong arm, wrong task, or a missing metric
+- config files, one per condition
+- optimise `valid_move()`. only cells next to a filled one can be legal, so the
+  candidate set is bounded by structure size not grid size. the sweep is 85 hours
+  without it, about 8 with
+- pytest: env invariants, greedy +x topples without a counterweight
+- the 2x4 experiment, 10+ seeds, Mann-Whitney and Cliff's delta, Holm-corrected
+- figures: H1 plot, build playback gif, offscreen with a fixed camera
+- the paper, LaTeX, plus a runs-to-figures script
 
 ## Decisions
 
