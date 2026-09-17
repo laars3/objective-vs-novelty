@@ -62,7 +62,8 @@ guarded instead of trapping. See Results.
 
 Bridge, the deceptive one. Score is `max(x) - x_base`, reach in +x only. One
 block past the base uses the half-block of slack, and nothing further out is
-legal until ballast goes on the -x side. Ballast never raises the score itself.
+legal until a counterweight goes on the -x side. Counterweights never raise the
+score themselves.
 Ceiling is `nx - 1 - nx//2`, so 11 here.
 
 Tower, the control. Score is `max(z)`. A column above the base does not move the
@@ -139,8 +140,8 @@ against an achievable 11.
 - `src/fitness.py`, `tower_score` and `bridge_score`.
 - `src/evolution.py`, the loop. Takes `score_func`, `agent_class`, `seed`. Logs
   the three series plus `best_grid`.
-- `src/visu.py`, `render(grid)`, one glyph mesh coloured by role: ballast behind
-  the base, spine, arm.
+- `src/visu.py`, `render(grid)`, one glyph mesh coloured by role: blue behind the
+  base, grey at the base column, red ahead of it.
 - `src/main.py`, runs one experiment, renders the best structure.
 
 Not built: novelty search, the archive, run logging, configs, tests, paper.
@@ -178,28 +179,41 @@ So best-ever does not separate the two arms at all. The mean separates them
 nearly four to one. Logging only best-ever, which is what I was doing a week ago,
 would have said the objective arm learns nothing.
 
-The two best structures are the same shape:
+### Seed 1 agrees
+
+| | last improvement | plateau | gen_mean | x span | mean_x |
+|---|---|---|---|---|---|
+| seed 0 | gen 87 | 6 | 4.0 | 9..18 | 12.50 |
+| seed 1 | gen 86 | 5 | 3.51 | 9..17 | 12.50 |
+| random | gen 16 | 6 | 1.05 | 9..18 | 12.41 |
+| reference | | 11 | | 2..23 | 12.48 |
+
+Both seeds stop improving at generation 86 or 87 and flatten for the next 114.
+Both best structures start at x=9 and sit at exactly the stability limit.
+
+### The mechanism: how far back the counterweights go
+
+Leaning to the limit is not what separates them. The reference is at 12.48, also
+at the limit. What differs is where the blocks behind the base sit:
 
 ```
-objective:  x 9..18,  mean_x 12.50   (limit 12.50)
-random:     x 9..18,  mean_x 12.41
+reference:  blocks behind base spread over x = 2..11,   mean 6.5,   5.5 from base
+seed 1:     blocks behind base crammed into x = 9..11,  mean 10.2,  1.8 from base
 ```
 
-Same span, both leaned to within a hundredth of the stability limit. Two
-different search processes converged on the same structure, so 6 is a real
-barrier and not a coincidence: it is where a single lean tops out.
+A block at x=2 pulls the centre of mass back three times harder than one at x=11,
+because it is three times further from the base. The reference puts its
+counterweights far back where each one counts. The agents stack theirs right next
+to the base, where each block barely moves the centre of mass, and then run out
+of budget.
 
-That is a sharper claim than "objective search plateaus below what is
-achievable". Both chance and objective-driven search stop at the limit of one
-lean, and neither finds the objective-neutral move that gets past it, which is
-adding ballast when it buys nothing immediately. The reference does exactly that
-and reaches 11 with fewer blocks than either arm used.
+So the objective-neutral move they never find is not "add a counterweight", it is
+"add a counterweight far behind the base". That is the placement that looks least
+useful of all: x=2 is as far from raising the score as a block can get, and it is
+the most valuable one to place.
 
-It predicts something for H2 too. If novelty search crosses 6, it should be
-because it stumbled into alternating, so check the structure and not just the
-score.
-
-Single seed so far.
+Prediction for H2: if novelty search crosses 6, check whether its counterweights
+reach back past x=9.
 
 ### Earlier setups, and why they failed
 
