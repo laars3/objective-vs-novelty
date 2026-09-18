@@ -126,9 +126,6 @@ Dividing `block_count` by the 2,304 grid cells would put every structure in
 same reason mean x is not usable: balance pins it to within 0.5 of the base, so
 it would be near constant across every structure in the experiment.
 
-Novelty is the mean k-NN distance (k=15) against the population plus an archive,
-and anything novel enough is added to the archive.
-
 `max_height` is the tower objective, so the BC overlaps the objectives. That is
 standard: Lehman and Stanley's maze BC was the robot's final position, which
 contained their objective. Results are known to hinge on the BC (Pugh et al.),
@@ -138,6 +135,35 @@ Sanity checks: a column straight up from the base gives `max_reach` and
 `com_reach` of 0 and `max_height` of 1. A block in the far grid corner gives
 `max_reach` of exactly 1. A tower and the reference cantilever sit 1.41 apart in
 a space whose maximum distance is 2.24.
+
+### The archive
+
+Novelty is the mean k-NN distance (k=15) against the current population plus an
+archive of BC vectors from earlier structures. The archive stores behaviours,
+not scores. It has no idea whether a structure was good. Its job is to mark
+territory as visited so that going back there earns nothing, which is what stops
+the search cycling: explore A, move to B, forget A, rediscover A.
+
+Entries are added by a dynamic threshold, following Lehman and Stanley. An
+individual enters if its novelty exceeds `rho_min`, and `rho_min` adjusts itself:
+raise it if too many were added over a window, lower it if none were added for
+several generations. Some implementations also add stochastically at around 2% as
+a floor.
+
+The threshold being dynamic is the point. A fixed one has to stay right for 200
+generations while the population and the archive both change underneath it. Too
+low and the archive balloons until everything is near something and novelty
+collapses; too high and it stays empty and there is no memory at all.
+
+Because the BC is normalised, `rho_min` is scale-free and interpretable. The
+maximum distance in the space is sqrt(5) = 2.24, so a threshold of 0.1 means
+roughly a tenth of one dimension's range, and that meaning does not drift.
+
+Gomes, Mariano and Christensen (2015) tested archive strategies systematically
+and found novelty search is somewhat robust to how entries are added and removed
+and to the choice of k, though both still affect performance. So this is worth
+getting reasonable rather than optimal. The planned ablation is archive on/off,
+not threshold tuning.
 
 ### Metrics
 
@@ -409,6 +435,10 @@ rendering and GIF export are plain PyVista plus imageio.
 - Pugh, Soros & Stanley (2016). Quality Diversity: A New Frontier for
   Evolutionary Computation. Frontiers in Robotics and AI.
 - Stanley & Lehman (2015). Why Greatness Cannot Be Planned. Springer.
+- Gomes, Mariano & Christensen (2015). Devising Effective Novelty Search
+  Algorithms: A Comprehensive Empirical Study. GECCO.
+- Kistemaker & Whiteson (2011). Critical Factors in the Performance of Novelty
+  Search. GECCO.
 
 ## Stretch goals
 
