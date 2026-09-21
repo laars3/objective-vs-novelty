@@ -3,445 +3,287 @@
 Testing whether deception decides when novelty search beats objective
 optimization.
 
-Small neural nets build 3D voxel structures one block at a time under support
-and balance rules. No backprop, the networks are evolved. Four selection
-strategies run on two tasks, one deceptive and one not. The prediction is that
-novelty wins on the deceptive one and loses on the other.
+Small neural nets build 3D voxel structures one block at a time under support and
+balance rules. No backprop, the networks are evolved. Four selection strategies
+run on two tasks, one deceptive and one not. The prediction is that novelty wins
+on the deceptive one and loses on the other.
 
-This file is my working log.
+Working log.
 
-## The question
-
-Is deception the condition under which novelty search beats direct objective
-optimization?
-
-Three hypotheses, in the order they have to be established:
+## Hypotheses
 
 H1. On the bridge task, objective search plateaus below what is achievable.
-Holds under the current rules: it stalls at 6 against an achievable 11. It failed
-under the old rules, which is why balance was reworked. See Results. Without H1
-the rest is meaningless, since a low score could just mean the budget ran out.
+Holds: it stalls at 6 against an achievable 11.
 
 H2. On the bridge task, novelty search ends up ahead of objective search.
-Mann-Whitney U over 10+ seeds, with effect size.
 
 H3. On the tower task, objective search does at least as well as novelty.
 
-H2 alone only says novelty won once. H2 and H3 together say deception is what
-decides it, and that can fail in either direction. A null result on H2 is still
-worth reporting if H1 holds.
+H2 alone says novelty won once. H2 and H3 together say deception is what decides
+it. A null result on H2 is still worth reporting if H1 holds.
 
 ## Setup
 
-### Environment
+Grid 24 x 8 x 12, non-cubic because the bridge ceiling depends only on x. Base
+cell fixed at `(nx//2, ny//2, 0)`. Budget 40 blocks.
 
-A voxel grid, currently 24 x 8 x 12. Non-cubic on purpose: the bridge ceiling
-depends only on x, while y and z cost compute without raising it. One base cell
-is fixed at the centre of the ground plane, at `(nx//2, ny//2, 0)`. Agents place
-one block per step up to a budget of B blocks. Two rules decide what is legal:
+Legal placements: cell is empty and face-adjacent to an existing block, and
+`z > 0` unless it is the base. Illegal ones are masked out of the action space.
 
-1. Support. The cell is empty and touches an existing block face-on, or it is
-   the base. The structure is one connected object grown from the base.
-2. Off the ground. `z > 0` unless it is the base, so reaching sideways is a
-   cantilever and not a line along the floor.
+Balance is a failure condition, not a legality rule. Centre of mass must stay
+within 0.5 of the base in x and y, checked after every placement. Breaking it is
+legal and fatal: the block is undone, the episode ends, the agent scores whatever
+stood before, and forfeits the rest of its budget.
 
-Illegal placements are masked out of the action space, so an agent cannot make
-one.
+Bridge, the deceptive one. Score `max(x) - x_base`. Ceiling 11.
 
-Balance is not a legality rule, it is a failure condition. The centre of mass
-has to stay over the base, `|mean(x) - x_base| <= 0.5` and the same for y, and
-it is checked after every placement. A placement that breaks it is legal and
-fatal: the structure collapses, the block is undone, the episode ends there, and
-the agent scores whatever stood before that placement, forfeiting the rest of
-its budget.
+Tower, the control. Score `max(z)`. Ceiling 11. A column above the base does not
+move the centre of mass, so greedy works.
 
-It used to be part of the mask, which is why the task was not deceptive. Balance
-guarded instead of trapping. See Results.
+Same environment and budget for both. Only the scoring changes.
 
-### The two tasks
+### Agents and arms
 
-Bridge, the deceptive one. Score is `max(x) - x_base`, reach in +x only. One
-block past the base uses the half-block of slack, and nothing further out is
-legal until a counterweight goes on the -x side. Counterweights never raise the
-score themselves.
-Ceiling is `nx - 1 - nx//2`, so 11 here.
+`Agent` is an MLP, `cells -> 128 -> cells`. Illegal cells masked to -1e9, argmax
+placed. 2,304 cells, ~590K parameters.
+`RandomAgent` gives uniform random scores to legal cells. Floor baseline.
 
-Tower, the control. Score is `max(z)`. A column above the base does not move the
-centre of mass, so stacking is always legal and greedy works. Ceiling is
-`nz - 1`, also 11, so both tasks span the same range.
+| arm | agent | selects on |
+|-----|-------|------------|
+| random | `RandomAgent` | nothing |
+| objective | `Agent` | task objective |
+| novelty | `Agent` | k-NN distance in behaviour space |
+| blend | `Agent` | half each |
 
-Same environment, same agents, same budget. Only the scoring changes.
-
-### Agents
-
-`Agent` is an MLP, `cells -> 128 -> cells`, where cells is `nx * ny * nz`. It
-maps the grid to a score per cell, illegal cells are masked to -1e9, and the
-argmax gets placed. On the current grid that is 2,304 cells and about 590K
-parameters.
-
-`RandomAgent` has no policy. It gives uniform random scores to legal cells, so
-the argmax is a uniform random legal placement. Floor baseline.
-
-Three of the four arms use the same `Agent` class. What changes between them is
-what selection rewards, not what builds.
-
-### The loop
-
-Each generation every agent builds on its own fresh grid and gets scored, the
-top half survive, and the next generation is bred from survivors with Gaussian
-mutation plus elitism, meaning the best agent is copied over untouched.
-
-### The arms
-
-| arm | agent | selection score |
-|-----|-------|-----------------|
-| random | `RandomAgent` | none |
-| objective | `Agent` | the task objective |
-| novelty | `Agent` | mean distance to k nearest neighbours in behaviour space |
-| blend | `Agent` | half objective, half novelty |
+Each generation every agent builds on a fresh grid, top half survive, next
+generation bred with Gaussian mutation plus elitism.
 
 ### Behaviour characterization
 
-`bc(grid, budget)` in `fitness.py` summarises a structure as 5 numbers, each on
-[0, 1]:
+`bc(grid, budget)` in `fitness.py`, 5 numbers each on [0, 1]:
 
-| | what it measures | denominator |
+| | measures | denominator |
 |---|---|---|
-| `block_count` | how much it built | `budget + 1`, the base included |
+| `block_count` | how much it built | `budget + 1` |
 | `max_height` | how tall | `nz - 1` |
-| `com_height` | where the mass sits vertically | `nz - 1` |
-| `max_reach` | how far the furthest block is from the base | corner distance |
-| `com_reach` | how far the average block is | corner distance |
+| `com_height` | where mass sits vertically | `nz - 1` |
+| `max_reach` | furthest block from base | corner distance |
+| `com_reach` | average block from base | corner distance |
 
-The two reach dimensions come from `np.hypot(x - x_base, y - y_base)`, one
-distance per block. Horizontal only, since height is already covered, and
-unsigned, so a structure stretching into -x counts as reaching far even though it
-scores nothing. `max_reach` and `com_reach` together separate a thin arm poking
-out of a compact body from a structure with mass spread all the way out, which is
-exactly how the reference differs from the agents.
+Reach comes from `np.hypot(x - x_base, y - y_base)`, one per block. Horizontal
+only, and unsigned so reaching into -x counts.
 
-Normalisation divides by what is achievable, not what is conceivable.
-Dividing `block_count` by the 2,304 grid cells would put every structure in
-[0, 0.018] and that dimension would contribute nothing to any distance. For the
-same reason mean x is not usable: balance pins it to within 0.5 of the base, so
-it would be near constant across every structure in the experiment.
+Normalise by what is achievable, not conceivable. `block_count` over 2,304 cells
+would put everything in [0, 0.018]. Mean x is unusable for the same reason,
+balance pins it near the base.
 
-`max_height` is the tower objective, so the BC overlaps the objectives. That is
-standard: Lehman and Stanley's maze BC was the robot's final position, which
-contained their objective. Results are known to hinge on the BC (Pugh et al.),
-so it is fixed before any experiments and shared across arms and tasks.
+Checks: a column gives `max_reach` and `com_reach` of 0, `max_height` of 1. A
+corner block gives `max_reach` of exactly 1. Tower and reference sit 1.41 apart,
+out of a maximum 2.24.
 
-Sanity checks: a column straight up from the base gives `max_reach` and
-`com_reach` of 0 and `max_height` of 1. A block in the far grid corner gives
-`max_reach` of exactly 1. A tower and the reference cantilever sit 1.41 apart in
-a space whose maximum distance is 2.24.
+`max_height` is the tower objective, so the BC overlaps the objectives. Standard,
+Lehman and Stanley's maze BC contained theirs. Fixed before experiments and
+shared across arms and tasks.
 
-### The archive
+### Archive
 
-Novelty is the mean k-NN distance (k=15) against the current population plus an
-archive of BC vectors from earlier structures. The archive stores behaviours,
-not scores. It has no idea whether a structure was good. Its job is to mark
-territory as visited so that going back there earns nothing, which is what stops
-the search cycling: explore A, move to B, forget A, rediscover A.
+Novelty is the mean k-NN distance (k=15) against the population plus an archive
+of past BC vectors. The archive stores behaviours, not scores. It marks territory
+as visited so going back earns nothing, which stops the search cycling.
 
-Entries are added by a dynamic threshold, following Lehman and Stanley. An
-individual enters if its novelty exceeds `rho_min`, and `rho_min` adjusts itself:
-raise it if too many were added over a window, lower it if none were added for
-several generations. Some implementations also add stochastically at around 2% as
-a floor.
+Dynamic threshold, following Lehman and Stanley: enter if novelty exceeds
+`rho_min`, raise `rho_min` if too many were added over a window, lower it if none
+were added for several generations. A fixed threshold would have to stay right
+for 200 generations while the population and archive both change.
 
-The threshold being dynamic is the point. A fixed one has to stay right for 200
-generations while the population and the archive both change underneath it. Too
-low and the archive balloons until everything is near something and novelty
-collapses; too high and it stays empty and there is no memory at all.
+Because the BC is normalised, `rho_min` is scale-free. Max distance is 2.24, so
+0.1 means about a tenth of one dimension.
 
-Because the BC is normalised, `rho_min` is scale-free and interpretable. The
-maximum distance in the space is sqrt(5) = 2.24, so a threshold of 0.1 means
-roughly a tenth of one dimension's range, and that meaning does not drift.
+Gomes et al. (2015) found novelty search is somewhat robust to archive strategy
+and k, though both still matter. Get it reasonable, not optimal.
 
-Gomes, Mariano and Christensen (2015) tested archive strategies systematically
-and found novelty search is somewhat robust to how entries are added and removed
-and to the choice of k, though both still affect performance. So this is worth
-getting reasonable rather than optimal. The planned ablation is archive on/off,
-not threshold tuning.
+`novelty()` goes in `fitness.py` (pure function). `Archive` goes in
+`evolution.py` (run-scoped state).
 
 ### Metrics
 
-Three series per generation:
-
-- `gen_best`, best score that generation
-- `best_so_far`, cumulative max
-- `gen_mean`, population mean
-
-Compare arms on `gen_mean`. Best-ever measures sampling volume, not search
-quality, see Results.
+`gen_best`, `best_so_far`, `gen_mean`, logged per generation. Compare arms on
+`gen_mean`. Best-ever measures sampling volume.
 
 ## Implemented
 
-- `env.py` : grid takes a shape tuple so it can be non-cubic. `valid_move()`
-  checks support and the ground rule. `is_stable()` checks the centre of mass.
-  `place_block()` undoes the block and returns False if the structure topples.
-  `best_possible_bridge()` builds the reference, 11 using 23 of 40 blocks.
-- `agent.py` : `Agent` (MLP), `RandomAgent`, `growth(sigma)` for mutation.
-- `fitness.py` : `tower_score`, `bridge_score`, `bc(grid, budget)`.
-- `evolution.py` : the loop, seeding, `score_func` and `agent_class` parameters,
-  logs `gen_best`, `best_so_far`, `gen_mean`, `best_grid`.
-- `visu.py` : `render(grid)`, glyph mesh coloured by position relative to the base.
-- `main.py` : runs one experiment, renders the result.
+- `env.py` : shape tuple grid, `valid_move()`, `is_stable()`, `place_block()`
+  undoes and returns False on collapse, `best_possible_bridge()` reference
+- `agent.py` : `Agent`, `RandomAgent`, `growth(sigma)`
+- `fitness.py` : `tower_score`, `bridge_score`, `bc(grid, budget)`
+- `evolution.py` : the loop, seeding, `score_func` and `agent_class`, logs the
+  three series plus `best_grid`
+- `visu.py` : `render(grid)`, glyph mesh coloured by position relative to base
+- `main.py` : runs one experiment, renders the result
 
 ## Results
 
-Grid 24 x 8 x 12, base at x=12, 40-block budget, population 50, sigma=0.002,
-seed 0, 200 generations.
+Grid 24 x 8 x 12, budget 40, population 50, sigma 0.002, 200 generations.
 
-The reference reaches 11 using 23 of the 40 blocks, so the budget is not the
-constraint and a plateau below 11 cannot be blamed on running out of blocks.
+Reference reaches 11 using 23 of 40 blocks, so the budget is not the constraint.
 
 | | population mean | best-ever |
 |---|---|---|
-| fresh agents, no evolution | 0.58 | 3 |
+| fresh agents | 0.58 | 3 |
 | random arm | 1.05 | 6 |
 | objective arm | 4.0 | 6 |
 | reference | | 11 |
 
-The objective arm learns and then stops:
-
 ```
-best_so_far: 3 -> 4 (gen 23) -> 5 (gen 27) -> 6 (gen 87), then flat for 113 gens
-gen_mean:    2.39, 3.05, 3.88, 4.17, 4.24, 3.84, 4.02, 3.99   (25-gen blocks)
+seed 0: 3 -> 4 (gen 23) -> 5 (gen 27) -> 6 (gen 87), flat for 113 gens
+seed 1: 2 -> 3 (gen 44) -> 4 (gen 79) -> 5 (gen 86), flat for 114 gens
 ```
 
-It plateaus at 6 against an achievable 11. H1 holds.
+H1 holds. Both seeds stop improving at generation 86 or 87.
 
-### Both arms stop at 6
+Best-ever does not separate the arms, both hit 6. The mean separates them four to
+one. The random arm hit 6 at generation 16 and never beat it in the next 184.
 
-The random arm's mean is flat at 1.05 across all 200 generations, and it also
-reaches 6, at generation 16, never beaten in the next 184.
+### The mechanism
 
-So best-ever does not separate the two arms at all. The mean separates them
-nearly four to one. Logging only best-ever, which is what I was doing a week ago,
-would have said the objective arm learns nothing.
+| | plateau | gen_mean | x span | mean_x |
+|---|---|---|---|---|
+| seed 0 | 6 | 4.0 | 9..18 | 12.50 |
+| seed 1 | 5 | 3.51 | 9..17 | 12.50 |
+| random | 6 | 1.05 | 9..18 | 12.41 |
+| reference | 11 | | 2..23 | 12.48 |
 
-### Seed 1 agrees
-
-| | last improvement | plateau | gen_mean | x span | mean_x |
-|---|---|---|---|---|---|
-| seed 0 | gen 87 | 6 | 4.0 | 9..18 | 12.50 |
-| seed 1 | gen 86 | 5 | 3.51 | 9..17 | 12.50 |
-| random | gen 16 | 6 | 1.05 | 9..18 | 12.41 |
-| reference | | 11 | | 2..23 | 12.48 |
-
-Both seeds stop improving at generation 86 or 87 and flatten for the next 114.
-Both best structures start at x=9 and sit at exactly the stability limit.
-
-### The mechanism: how far back the counterweights go
-
-Leaning to the limit is not what separates them. The reference is at 12.48, also
-at the limit. What differs is where the blocks behind the base sit:
+Everyone leans to the stability limit, the reference included. What differs is
+where the blocks behind the base sit:
 
 ```
-reference:  blocks behind base spread over x = 2..11,   mean 6.5,   5.5 from base
-seed 1:     blocks behind base crammed into x = 9..11,  mean 10.2,  1.8 from base
+reference:  x = 2..11,   mean 6.5,   5.5 from base
+seed 1:     x = 9..11,   mean 10.2,  1.8 from base
 ```
 
-A block at x=2 pulls the centre of mass back three times harder than one at x=11,
-because it is three times further from the base. The reference puts its
-counterweights far back where each one counts. The agents stack theirs right next
-to the base, where each block barely moves the centre of mass, and then run out
-of budget.
+A block at x=2 pulls the centre of mass back three times harder than one at x=11.
+The agents stack counterweights next to the base where each barely moves the
+centre of mass, then run out of budget.
 
-So the objective-neutral move they never find is not "add a counterweight", it is
-"add a counterweight far behind the base". That is the placement that looks least
-useful of all: x=2 is as far from raising the score as a block can get, and it is
-the most valuable one to place.
+So the move they never find is not "add a counterweight", it is "add one far
+behind the base", which is the placement that looks least useful of all.
 
-Prediction for H2: if novelty search crosses 6, check whether its counterweights
-reach back past x=9.
+Prediction for H2: if novelty crosses 6, check whether its counterweights reach
+back past x=9.
 
-### Earlier setups, and why they failed
+### Earlier setups
 
-Two dead versions, both worth remembering.
+12 x 12 x 12 cubic, bridge ceiling 5. A fresh network could reach 5, so no
+headroom. Final best always equalled generation 0's best. The sigma = 0 control
+confirmed mutation contributed nothing. Cause: six possible scores, population
+collapsed onto one value, selection ranked ties by list index.
 
-A 12 x 12 x 12 cubic grid, bridge ceiling 5. A freshly initialized network could
-reach 5, so there was no headroom. In every run the final best equalled
-generation 0's best: across 5,000 structures no mutated child ever beat the
-initial draw. The sigma = 0 control confirmed it, with mutation off the mean
-converged to exactly generation 0's best and turning it back on made the mean
-slightly worse. The whole thing was a max-finder over the initial population, and
-the cause was six possible scores: the population collapsed onto one value within
-25 generations and selection was then ranking ties by list index.
-
-The current grid with balance as part of the action mask. Widening x to 24 fixed
-the headroom problem and the search started working, climbing 5 to 11 over 107
-generations. But it reached 11, the ceiling, so the task was not deceptive.
-Masking meant an agent could not over-extend and topple, so balance steered
-agents toward the counterweights the optimum needs instead of trapping them. That
-is why balance became a failure condition.
+Current grid with balance in the mask. Search worked, climbing 5 to 11, but
+reaching 11 meant the task was not deceptive. Masking made over-extending
+impossible rather than costly, so balance steered instead of trapping.
 
 ## Things that cost time
 
-sigma = 0.002. `nn.Linear` inits weights at std ~0.014 and ~0.05 for the two
-layers, so sigma=0.1 shifts a weight by 7x its own size and every child is a new
-random network. If a fitness curve goes flat, check sigma against weight scale
-first.
-
-Best-ever is a bad way to compare arms, it mostly measures how much you sampled.
-Use `gen_mean`.
-
-If the final best equals generation 0's best, the search is doing nothing and you
-are looking at selection over the initial draw. The sigma = 0 control proves it
-either way.
-
-Headroom matters more than step size. When the ceiling sits close to what random
-initialization reaches, no amount of sigma tuning helps, because the population
-ties on one score and selection stops discriminating.
-
-The deception is not "refuses the enabling move". Objective search places
-counterweights freely. It failed on efficiency, and once given headroom it did
-not fail at all.
-
-Masking removes deception, and that was measured rather than guessed. Agents
-cannot make illegal moves, so balance steers instead of trapping. Deception has
-to live somewhere an agent can go wrong.
-
-Cutting the block budget is the wrong way to make a task harder. Agents then fail
-by starvation rather than deception, and it destroys the reference solution's
-argument, which needs slack to prove a better structure was affordable.
+- sigma = 0.002. `nn.Linear` inits at std ~0.014 and ~0.05, so sigma 0.1 is 7x a
+  weight's own size and every child is a new random network.
+- Best-ever mostly measures how much you sampled. Use `gen_mean`.
+- If final best equals generation 0's best, the search is doing nothing. The
+  sigma = 0 control proves it either way.
+- Headroom matters more than step size.
+- Masking removes deception. It has to live somewhere an agent can go wrong.
+- Cutting the budget makes agents fail by starvation, and destroys the reference
+  solution's argument.
 
 ## To do
 
-- archive: store BCs above a novelty threshold, k-NN queries
-- k-NN novelty scoring
+- `novelty()` in `fitness.py`, `Archive` in `evolution.py`
 - restructure the scoring path to score a generation at a time, `score_func(grid)`
   cannot express novelty
 - novelty and blend arms. blend mixes an integer 0 to 11 with a distance around
-  0 to 2, so both need normalising or it is just the objective
+  0 to 2, so both need normalising
 - coverage metric
-- run logging to `runs/`: seed, arm, task, config, the three series, block
-  placements. log placements not grids, the order rebuilds the grid and drives
-  playback later
-- print the config at the top of every run. four runs have gone wrong from the
-  wrong arm, wrong task, or a missing metric
+- run logging to `runs/`, placements not grids
+- print the config at the top of every run
 - config files, one per condition
-- optimise `valid_move()`. only cells next to a filled one can be legal, so the
-  candidate set is bounded by structure size not grid size. the sweep is 85 hours
-  without it, about 8 with
+- optimise `valid_move()`, candidates from neighbours of filled cells. 85 hours
+  for the sweep without it, about 8 with
 - pytest: env invariants, greedy +x topples without a counterweight
-- the 2x4 experiment, 10+ seeds, Mann-Whitney and Cliff's delta, Holm-corrected
-- figures: H1 plot, build playback gif, offscreen with a fixed camera
-- the paper, LaTeX, plus a runs-to-figures script
+- 2x4 experiment, 10+ seeds, Mann-Whitney and Cliff's delta
+- figures: H1 plot, build playback gif
+- the paper
 
 ## Decisions
 
 Settled:
 
-- Ground-level extension removed. `valid_move()` needs `z > 0` except for the
-  base, so the bridge task builds a cantilever.
-- The deceptive task is called `bridge` in code. It is a cantilever in the
-  engineering sense, which the paper should say once.
-- Non-cubic grid, 24 x 8 x 12. Both ceilings 11. Cheaper than cubic N=24, which
-  would cost eight times the compute for the same bridge ceiling.
-- Block budget stays at 40. Tightening it makes agents fail by starvation.
-- Balance becomes a failure condition rather than a mask. Unbalanced placements
-  are legal, but making one collapses the structure: the episode ends there, the
-  offending block is undone, and the score is the structure as it stood before
-  that placement. The remaining budget is lost. Under the old rules objective
-  search reached the ceiling, which proved the task was not deceptive, and the
-  reason was that masking made the greedy move impossible rather than costly.
+- Ground-level extension removed, `z > 0` except the base
+- Non-cubic grid 24 x 8 x 12, both ceilings 11
+- Budget stays at 40
+- Balance is a failure condition, not a mask
 
-Still open:
+Open:
 
-- Rename `Agent`. `ObjectiveAgent` would be wrong since novelty and blend use the
-  same class. `NetworkAgent` or `MLPAgent` names what it is instead of which arm
-  uses it. Arm names belong in run configs.
-- Tie-breaking in selection. Scores are integers, so mutation gets no partial
-  credit between steps. A continuous secondary term, `mean(x)` for bridge and
-  centre-of-mass height for tower, would give selection something to see. Held
-  back while the new rules are tested. Would apply identically to every arm.
-- Population size for the real runs. Currently 50, the plan says 100. Bigger
-  populations converge faster partly by containing more good initial draws.
+- Rename `Agent`. `NetworkAgent` or `MLPAgent`, not `ObjectiveAgent`, since
+  novelty and blend use the same class
+- Tie-breaking in selection. Integer scores give mutation no partial credit
+- Population size, currently 50, plan says 100
 
-## Plan for the experiment
+## Experiment plan
 
-2 x 4: {bridge, tower} x {random, objective, novelty, blend}.
+2 x 4: {bridge, tower} x {random, objective, novelty, blend}. Comparisons within
+a task, never between.
 
-Comparisons run within a task, across arms, never between tasks.
+- 10+ seeds per condition, everything from one logged seed
+- population 100, ~200 generations, sigma identical across arms
+- tuned on tower only, never on bridge
+- primary metric population mean, best-so-far alongside
+- secondary: behaviour-space coverage, population BC variance
+- Mann-Whitney U, Holm-corrected, with Cliff's delta
+- plots show median and IQR over seeds
+- ablation: archive on/off for novelty on bridge
 
-- 10+ seeds per condition, so 80+ runs, everything derived from one logged seed
-- population 100, ~200 generations, sigma fixed and identical across arms
-- hyperparameters tuned on tower only, never on bridge, so nothing favours an arm
-  on the task that decides H2
-- primary metric is population mean per generation, best-so-far alongside
-- secondary: behaviour-space coverage and population BC variance, the mechanism
-  evidence that novelty spreads where objective clusters
-- Mann-Whitney U on the final objective, Holm-corrected, with Cliff's delta
-- plots show median and IQR over seeds, not single runs
-- every run saves config, seed, series and placements under `runs/`, and every
-  figure regenerates from there with one script
+## Limitations
 
-One ablation planned: archive on/off for the novelty arm on bridge.
-
-## Known limitations
-
-- No physics. Balance is a centre-of-mass rule, which is what makes the reference
-  solution constructible by hand.
-- A collapse is not modelled as one. The offending block is undone and the
-  structure that stood is kept and scored, so a toppled agent leaves a neat stub
-  rather than rubble. Physically wrong, but scoring collapses as zero would leave
-  49% of an initial population at zero with nothing for selection to rank.
-- Objectives are coarse integers, so mutation gets no partial credit and ties
-  between runs are common. Effect sizes reported partly for this reason.
-- Best-ever is confounded by sampling volume.
-- Outcomes are sensitive to the initial population, which on the old grid decided
-  the run entirely. The wider grid reduces this but does not remove it, so seeds
-  are reported rather than single runs.
-- `valid_move()` dominates runtime.
-- `Agent` is deterministic, so one network gives one structure. Evaluation is
-  noise-free but there is no exploration within a lifetime.
-- Weight-space evolution on ~590K parameters with a population of 50 to 100 is
-  demanding, and the random arm exists partly to check whether any arm beats
-  chance.
-- One BC, results may hinge on it. A BC ablation is a stretch goal.
+- No physics, balance is a centre-of-mass rule
+- A collapse leaves a neat stub rather than rubble. Scoring collapses as zero
+  would leave 49% of an initial population tied at zero
+- Coarse integer objectives, so ties are common
+- Best-ever is confounded by sampling volume
+- Outcomes are sensitive to the initial population
+- `valid_move()` dominates runtime
+- `Agent` is deterministic, no exploration within a lifetime
+- ~590K parameters with a population of 50 to 100 is demanding
+- One BC, results may hinge on it
 
 ## Running it
-
-```
-python src/main.py
-```
-
-Runs one experiment and renders the best structure. Pipe through `tee` to keep
-the output, and use `-u` so it is written as it goes rather than buffered:
 
 ```
 mkdir -p runs
 python3 -u src/main.py | tee runs/obj_seed0.txt
 ```
 
-Note that `render()` blocks until the window is closed, so a buffered run will
-not flush its output until then.
+`-u` because output buffers otherwise, and `render()` blocks until the window is
+closed so a buffered run will not flush until then.
 
 ## Stack
 
-Python 3.9+, PyTorch, NumPy, PyVista, Matplotlib, SciPy. No Qt: offscreen
+Python 3.9+, PyTorch, NumPy, PyVista, Matplotlib, SciPy. No Qt, offscreen
 rendering and GIF export are plain PyVista plus imageio.
 
 ## References
 
-- Lehman & Stanley (2011). Abandoning Objectives: Evolution Through the Search
-  for Novelty Alone. Evolutionary Computation 19(2).
+- Lehman & Stanley (2011). Abandoning Objectives. Evolutionary Computation 19(2).
 - Goldberg (1987). Simple genetic algorithms and the minimal, deceptive problem.
 - Mouret & Clune (2015). Illuminating search spaces by mapping elites.
-  arXiv:1504.04909.
-- Pugh, Soros & Stanley (2016). Quality Diversity: A New Frontier for
-  Evolutionary Computation. Frontiers in Robotics and AI.
-- Stanley & Lehman (2015). Why Greatness Cannot Be Planned. Springer.
+- Pugh, Soros & Stanley (2016). Quality Diversity. Frontiers in Robotics and AI.
+- Stanley & Lehman (2015). Why Greatness Cannot Be Planned.
 - Gomes, Mariano & Christensen (2015). Devising Effective Novelty Search
-  Algorithms: A Comprehensive Empirical Study. GECCO.
+  Algorithms. GECCO.
 - Kistemaker & Whiteson (2011). Critical Factors in the Performance of Novelty
   Search. GECCO.
 
-## Stretch goals
+## Stretch
 
-- MAP-Elites arm, keeping the best structure per BC cell.
-- BC ablation, rerunning H2 with a deliberately poor BC, `[block_count]` only.
-- Cluster each arm's final structures and characterise build-order patterns.
+- MAP-Elites arm
+- BC ablation with `[block_count]` only
+- Cluster each arm's final structures by build-order pattern
