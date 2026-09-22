@@ -1,6 +1,34 @@
 from env import Environment
 import numpy as np, torch, random, copy
 
+class Archive:
+    def __init__(self, rho_min=0.1, max_add=4, patience=5, raise_by=1.05, lower_by=0.95):
+        self.rho_min = rho_min
+        self.max_add = max_add
+        self.patience = patience
+        self.raise_by = raise_by
+        self.lower_by = lower_by
+        self.vectors = np.empty((0,5))
+        self.gens_since_add =0
+
+    def update(self, bcs,novelties):
+
+        target = novelties > self.rho_min
+        self.vectors = np.vstack([self.vectors, bcs[target]])
+
+        # rho adjustment
+        n = target.sum()
+        if n > self.max_add:
+            self.rho_min = (self.rho_min * self.raise_by)
+            self.gens_since_add = 0
+        elif n == 0:
+            self.gens_since_add += 1
+            if (self.gens_since_add) >= self.patience:
+                self.rho_min = (self.rho_min * self.lower_by)
+                self.gens_since_add = 0
+        else:
+            self.gens_since_add =0
+
 class Evolution:
     def __init__(self, population_size, grid_shape, score_func, seed, agent_class): # creates population of agents all starting with random weights
         torch.manual_seed(seed)
