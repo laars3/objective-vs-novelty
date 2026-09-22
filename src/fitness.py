@@ -27,3 +27,13 @@ def bc(grid, budget=40): # 5 num summary of structure, novelty measures against 
     com_reach = horizontal_dist.mean()/ corner
 
     return np.array([block_count, max_height,com_height, max_reach, com_reach])
+
+def novelty(bcs, archive, k=15): # how isolated structure is in bc space per agent
+
+    rows=[]
+    pool = np.vstack([bcs, archive]) # neighbours + history, visited behaviour is like occupied
+    for v in bcs: # single agent bc vector at a time
+        rows.append(np.linalg.norm(pool-v, axis=1)) # distance from this agent to every pool point
+    dist = np.array(rows) # stack rows, one per agent, column per pool point
+    dist.sort(axis=1)
+    return dist[:,1:k+1].mean(axis=1) # since the first dist point it 0, skip and take next k, then avg
