@@ -67,30 +67,48 @@ class Evolution:
                 self.scores[i] = self.score_func(env.grid)
                 self.grids[i] = env.grid
 
-            if self.selection == "novelty": # checks if scores to rank on should be novelty or based on distance like objective
+            if self.selection in ("novelty", "blend"): # selects how to grade agent, taking pure novelty for novelty arm, and blending obj and nov for blend arm
                 rows=[]
                 for g in self.grids:
                     rows.append(bc(g))
                 bcs = np.array(rows)
-                rank_scores = novelty(bcs, self.archive.vectors)
-                self.archive.update(bcs, rank_scores)
+                nov = novelty(bcs, self.archive.vectors)
+                self.archive.update(bcs, nov)
+            if self.selection == "blend":
+                # divide each score by max x to get score between 0 and 1
+                nx = self.grid_shape[0]
+                ceiling = nx-1-nx//2
+                reach = np.array(self.scores)/ceiling
+
+                # tries settings novetly between 0 and 1, check first that novelity is non negative
+                if nov.max()>0:
+                    nov_scaled = nov / nov.max()
+                else:
+                    nov_scaled = nov
+
+                # half each and combine for blend score
+                rank_scores=(0.5 * reach) + (0.5*nov_scaled)
+            elif self.selection == "novelty":
+                rank_scores =  nov
             else:
                 rank_scores = self.scores
 
+            # log reach so same measurment for arm
             maximum=max(self.scores)
             self.gen_best.append(maximum)
-            if maximum > self.best:
+            if maximum > self.best: # new best
                 self.best=maximum
                 self.best_grid=self.grids[self.scores.index(maximum)]
             self.best_so_far.append(self.best)
 
             self.gen_mean.append((sum(self.scores)/len(self.population)))
 
+            # selection for each arm based on its own rank_score
             ranked=sorted(range(len(self.scores)), key=lambda i: rank_scores[i], reverse=True) # ranks scores assigned to index
             keep=len(self.population)//2 # drops lower half of scores
             survivors=[self.population[i] for i in ranked[:keep]]
 
-            next_gen= [survivors[0]]
+            next_gen= [survivors[0]] # elitism
             while len(next_gen) < len(self.population): # repopulates the next generation list with random survivor and applies slight deviation
                 parent=random.choice(survivors)
                 child=copy.deepcopy(parent)
