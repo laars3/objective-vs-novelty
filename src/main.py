@@ -4,7 +4,7 @@ from fitness import bridge_score, tower_score
 from agent import RandomAgent, Agent
 import numpy as np
 
-config = dict(grid_shape=(24,8,12), population_size=50, score_func=bridge_score, seed=1, agent_class=Agent, selection="novelty")
+config = dict(grid_shape=(24,8,12), population_size=50, score_func=bridge_score, seed=1, agent_class=Agent, selection="blend")
 run_config = dict(steps=40, sigma=0.002, generations=200)
 
 print("Config: ", {k: getattr(v, "__name__", v) for k,v in {**config, **run_config}.items()})
