@@ -16,8 +16,11 @@ H1. On the bridge task, objective search plateaus below what is achievable.
 Holds: it stalls at 6 against an achievable 11.
 
 H2. On the bridge task, novelty search ends up ahead of objective search.
+Does not hold so far: on two seeds novelty and blend reach the same best as
+objective, with a lower mean.
 
 H3. On the tower task, objective search does at least as well as novelty.
+Not tested yet.
 
 H2 alone says novelty won once. H2 and H3 together say deception is what decides
 it. A null result on H2 is still worth reporting if H1 holds.
@@ -54,6 +57,10 @@ The four arms are random, objective (selects on the task score), novelty
 (selects on how different a structure is from the others), and blend (half and
 half). The last three all use the same network, only what selection rewards is
 different.
+
+For blend, reach runs 0 to 11 and novelty roughly 0 to 2, so mixing them raw
+would be mostly reach. Reach is divided by the bridge ceiling and novelty by the
+largest novelty that generation, so both run 0 to 1 before taking half of each.
 
 Each generation every agent builds on a fresh grid, the top half survive, and the
 next generation is bred from them with Gaussian mutation, keeping the best one
@@ -101,13 +108,16 @@ range.
 Gomes et al. (2015) found novelty search is fairly robust to how the archive is
 managed and to k, though both still matter.
 
+In practice the archive ends a 200 generation run with 220 to 265 entries and
+rho min around 0.10 to 0.13, so it is neither empty nor flooded.
+
 ### Scores
 
 Every agent gets two numbers. Its reach score is what always gets recorded, and
 it is how arms are compared. Its selection score is what decides who survives.
-For the objective arm these are the same. For the novelty arm the selection score
-is novelty, but reach is still what gets recorded, so all arms are measured on
-the same thing.
+For the objective arm these are the same. For novelty and blend the selection
+score is novelty or the mix, but reach is still what gets recorded, so all arms
+are measured on the same thing.
 
 Arms are compared on the population mean, not the best ever, because the best
 ever mostly measures how many structures were tried.
@@ -117,7 +127,7 @@ ever mostly measures how many structures were tried.
 The environment with the support, ground and balance rules, plus a hand built
 reference bridge that reaches 11 using 23 of the 40 blocks. The network agent and
 the random agent. Tower and bridge scoring, the behaviour summary, and novelty.
-The archive. The evolution loop with seeding and a choice of arm. A renderer that
+The archive. The evolution loop with seeding and all four arms. A renderer that
 colours blocks by whether they sit behind the base, over it, or out in front. The
 run settings are written once, printed, and then used, so a log always says what
 produced it.
@@ -168,8 +178,24 @@ barely helps, and run out of blocks.
 So the move they never find is not adding a counterweight, it is adding one far
 behind the base, which looks like the least useful placement of all.
 
-For H2: if novelty gets past 6, check whether its counterweights reach back past
-x = 9.
+### Novelty and blend
+
+| arm | best (s0, s1) | mean (s0, s1) |
+|---|---|---|
+| objective | 6, 5 | 4.0, 3.5 |
+| blend | 6, 5 | 3.5, 3.3 |
+| novelty | 6, 5 | 1.9, 1.7 |
+| random | 6 | 1.05 |
+
+Within a seed all arms reach the same best, so the seed determines the ceiling
+more than the arm does. Means are ordered objective > blend > novelty > random on
+both seeds. Counterweights stay within 2.4 blocks of the base in every run,
+against 5.5 for the reference. Novelty structures are taller and wider in y,
+consistent with it exploring the dimensions that do not cause collapse.
+
+H2 is not supported on two seeds. Since all selection rules stop at the same
+value, the limit is likely upstream of selection, possibly in the network's
+ability to represent a long counterweight chain.
 
 ### Earlier setups
 
@@ -199,14 +225,13 @@ of trapping them.
 
 ## To do
 
-- first novelty run on bridge, seed 0, 200 generations. Does it get past 6
-- blend arm. Reach runs 0 to 11 and novelty roughly 0 to 2, so both need scaling
-  before mixing
+- speed up valid move checking, then 10 seeds per arm on bridge
+- decide whether to test a different agent or report all arms hitting the same
+  limit
+- tower runs for H3
 - coverage metric
 - a short summary printed at the end of each run
 - save each run to a file, including the order blocks were placed
-- speed up valid move checking by only looking at cells next to existing blocks.
-  The full experiment is about 85 hours without it and about 8 with
 - tests for the environment rules, including that reaching straight out topples
   without a counterweight
 - the full experiment, 2 tasks x 4 arms x 10+ seeds, Mann-Whitney and Cliff's
@@ -223,6 +248,9 @@ Still open: renaming the agent class to something like NetworkAgent, since three
 arms use it. Whether to add a tie break to selection, since whole number scores
 give mutation no credit for small progress. Population size, currently 50, the
 plan says 100.
+
+The blend weight is not tuned on bridge, since repeated tries would eventually
+cross 6 by chance. Any tuning happens on tower.
 
 ## Experiment plan
 
@@ -251,16 +279,6 @@ compared within a task.
   within a single build
 - About 590K weights evolved with a population of 50 to 100 is a lot
 - One behaviour summary, results may depend on it
-
-## Running it
-
-```
-mkdir -p runs
-python3 -u src/main.py | tee runs/obj_seed0.txt
-```
-
-The -u stops the output being held back until the end. The render window also
-blocks until it is closed.
 
 ## Stack
 
