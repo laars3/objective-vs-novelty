@@ -56,7 +56,7 @@ class Evolution:
                 env=Environment(self.grid_shape) # fresh grid per agent so they dont share state
 
                 for _ in range(steps):
-                    valid = env.valid_move() # recompute valid positions after every placement
+                    valid = env.valid_move_new() # recompute valid positions after every placement
                     if not valid: break # no valid moves left, structure is done early
                     output=current_agent.forward(env.grid, valid)
                     index=torch.argmax(output).item() # pick highest scoring valid position

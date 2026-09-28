@@ -1,4 +1,7 @@
 import numpy as np
+from networkx.classes import neighbors
+from sympy.codegen.ast import continue_
+
 
 class Environment:
     def __init__(self, shape): # takes in a shape
@@ -39,6 +42,18 @@ class Environment:
                         valid_blocks.append((x,y,z))
 
         return valid_blocks
+
+    def valid_move_new(self): # new valid_move func, instead of checking every single position in the grid, just check neighbors of already filled blocks
+
+        valid_blocks = set()
+        filled = np.argwhere(self.grid==1)
+
+        for dx,dy,dz in filled:
+            neighbors = [(dx - 1, dy, dz),(dx + 1, dy, dz),(dx, dy - 1, dz),(dx, dy + 1, dz),(dx, dy, dz - 1), (dx, dy, dz + 1)]
+            for x,y,z in neighbors:
+                if 0<=x<self.shape[0] and 0<=y<self.shape[1] and 0<z<self.shape[2] and self.grid[x,y,z]!=1: # keep if inside grid, empty, and z>0
+                    valid_blocks.add((int(x),int(y),int(z)))
+        return sorted(valid_blocks)
 
     def best_possible_bridge(self,steps): # find best possible bridge reach to compare
         grid=self.grid
