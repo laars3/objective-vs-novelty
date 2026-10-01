@@ -11,8 +11,8 @@ This is my working log for the project.
 H1. On the bridge task, objective search stalls below what is possible. Holds,
 it stalls at 6 when 11 is possible.
 
-H2. On the bridge task, novelty search ends up ahead of objective search. Does
-not hold on two seeds so far.
+H2. On the bridge task, novelty search ends up ahead of objective search. Not
+supported on 10 seeds.
 
 H3. On the tower task, objective search does at least as well as novelty. Not
 tested yet.
@@ -45,34 +45,38 @@ Arms are always compared on reach, using the population mean.
 
 ## Results
 
-Population 50, 200 generations, two seeds.
+Bridge task, population 50, 200 generations, 10 seeds per arm. Each run is
+saved as json in runs/.
 
 The hand built reference bridge reaches 11 using 23 of the 40 blocks.
 
-Objective reaches 6 on seed 0 and 5 on seed 1, and stops improving around
-generation 86 on both. Mean reach 4.0 and 3.5.
+Best reach per seed:
 
-Blend reaches 6 and 5, mean 3.5 and 3.3.
+objective 6 5 3 6 7 2 7 6 6 8, median 6
+blend 6 5 6 5 7 7 9 8 6 7, median 6.5
+novelty 6 5 5 5 6 6 6 6 6 5, median 6
+random 6 7 5 6 6 6 5 5 7 5, median 6
 
-Novelty reaches 6 and 5, mean 1.9 and 1.7.
+Mean reach over the last 50 generations, median across seeds: blend 3.80,
+objective 3.45, novelty 1.82, random 1.02.
 
-Random reaches 6, mean 1.05.
+Mann-Whitney U across seeds: no two arms differ significantly on best reach.
+Blend against objective gives p = 0.33 and Cliff's delta 0.27. On mean reach,
+objective and blend are both well above novelty and random, p < 0.001, and
+level with each other.
 
-So every arm reaches the same best within a seed, and the seed matters more than
-the arm. The means differ, objective highest and novelty lowest.
+Objective collapses on two seeds, ending at 3 and 2 after finding its best in
+generation 0 or 1. Blend's worst seed is 5.
 
 The reason they stall shows in the structures. They all lean right up to the
 balance limit, the reference too. The reference puts its counterweights on
-average 5.5 blocks behind the base. The agents keep theirs about 2 behind. A
+average 5.5 blocks behind the base. Every arm keeps them 1.4 to 1.9 behind. A
 block further back pulls the centre of mass back harder, so the agents use up
 their blocks on weak counterweights. Placing one far behind the base scores
 nothing at the time, which is why no arm finds it.
 
-Novelty builds taller and wider sideways than objective. Those directions rarely
-cause a collapse, so they are where it is easy to be different.
-
-Since all four arms stop at the same place, the limit is probably the network
-and not the selection method.
+Since every arm makes the same mistake, the limit is probably the network.
+Blend's lead over objective is not significant with 10 seeds.
 
 Earlier versions failed in two ways. On a 12 x 12 x 12 grid a random network
 could already reach the maximum of 5, so evolution had nothing to improve. With
@@ -93,14 +97,12 @@ next to existing blocks.
 
 ## To do
 
-1) Save each run to a file, including the order the blocks were placed.
-2) A script that runs 10 seeds of each arm and saves them.
-3) Tower runs for H3.
-4) Decide whether to try a different agent, or write up all arms hitting the
-same limit.
-5) Statistics: Mann-Whitney U and Cliff's delta across seeds.
-6) Figures, and a gif of a structure being built.
-7) The paper.
+1) Tower runs for H3.
+2) More seeds of blend and objective on bridge, to see if blend's lead holds.
+3) Decide whether to try a different agent.
+4) Save the best structure of each generation, for a gif of a run.
+5) Figures.
+6) The paper.
 
 ## Limitations
 
