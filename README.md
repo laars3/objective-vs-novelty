@@ -14,8 +14,8 @@ it stalls at 6 when 11 is possible.
 H2. On the bridge task, novelty search ends up ahead of objective search. Not
 supported on 10 seeds.
 
-H3. On the tower task, objective search does at least as well as novelty. Not
-tested yet.
+H3. On the tower task, objective search does at least as well as novelty.
+Holds.
 
 ## Setup
 
@@ -41,7 +41,7 @@ of the centre of mass, distance of the furthest block from the base, and average
 distance from the base. An archive keeps structures that were novel enough, so
 revisiting old ones earns nothing.
 
-Arms are always compared on reach, using the population mean.
+Arms are compared on the task score, mainly the population mean.
 
 ## Results
 
@@ -76,12 +76,32 @@ their blocks on weak counterweights. Placing one far behind the base scores
 nothing at the time, which is why no arm finds it.
 
 Since every arm makes the same mistake, the limit is probably the network.
-Blend's lead over objective is not significant with 10 seeds.
 
-Earlier versions failed in two ways. On a 12 x 12 x 12 grid a random network
-could already reach the maximum of 5, so evolution had nothing to improve. With
-balance built into the mask, agents could never over-extend, so the task was not
-deceptive and objective search reached 11.
+Earlier bridge versions failed in two ways. On a 12 x 12 x 12 grid a random
+network could already reach the maximum of 5, so evolution had nothing to
+improve. With balance built into the mask, agents could never over-extend, so
+the task was not deceptive and objective search reached 11.
+
+Tower task, same settings.
+
+Best height per seed:
+
+objective 11 11 11 10 11 11 11 10 11 11, median 11
+blend 11 11 11 11 11 11 11 11 11 11, median 11
+novelty 10 11 11 9 11 10 11 11 11 11, median 11
+random 8 9 8 8 8 10 9 8 8 8, median 8
+
+Mean height over the last 50 generations, median across seeds: blend 8.93,
+objective 8.66, novelty 5.47, random 2.21.
+
+On best height objective and novelty are level, p = 0.72. On mean height
+objective is well above novelty, p < 0.001 and Cliff's delta 0.96. Blend and
+objective are level on both. Objective beats random on best height, p < 0.001,
+which no arm manages on bridge.
+
+Novelty's mean is about half of objective's on bridge and two thirds on tower.
+It is behind on both tasks, so making the task deceptive did not change which
+one wins.
 
 ## Info Collected
 
@@ -97,16 +117,15 @@ next to existing blocks.
 
 ## To do
 
-1) Tower runs for H3.
-2) More seeds of blend and objective on bridge, to see if blend's lead holds.
-3) Decide whether to try a different agent.
-4) Save the best structure of each generation, for a gif of a run.
-5) Figures.
-6) The paper.
+1) More seeds of blend and objective on bridge, to see if blend's lead holds.
+2) Decide whether to try a different agent.
+3) Save the best structure of each generation, for a gif of a run.
+4) Figures.
+5) The paper.
 
 ## Limitations
 
-1) Balance is a centre of mass check, not physics.
+1) Balance is only a centre of mass check.
 2) A collapse keeps what stood before it rather than scoring zero.
 3) Scores are whole numbers, so many ties.
 4) Results depend a lot on the starting population.

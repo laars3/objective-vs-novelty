@@ -4,13 +4,13 @@ from agent import RandomAgent, Agent
 import numpy as np, time
 import json, os
 
-score_f = "tower" # possible score function (bridge, tower)
+score_f = "bridge" # possible score function (bridge, tower)
 tasks = {"tower": tower_score, "bridge":bridge_score}
 
 
 run_config = dict(steps=40, sigma=0.002, generations=200)
 
-arms = [("objective", Agent, "objective"), ("novelty", Agent, "novelty"), ("blend", Agent, "blend"), ("random", RandomAgent, "random")]
+arms = [("objective", Agent, "objective"), ("novelty", Agent, "novelty"), ("blend", Agent, "blend")] #("random", RandomAgent, "random")]
 
 def run_save(evolution, config, run_config, name):
     path = f"runs/{name}_{score_f}_s{config['seed']}.json"
@@ -24,7 +24,7 @@ def run_save(evolution, config, run_config, name):
 
 
 for name, agent_class, selection in arms:
-    for seed in range(10):
+    for seed in range(10,30):
         path=f"runs/{name}_{score_f}_s{seed}.json"
         if os.path.exists(path):
             continue

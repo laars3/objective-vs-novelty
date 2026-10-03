@@ -18,3 +18,5 @@ venv/
 # Experiment outputs (keep the code, not the run artifacts)
 runs/
 *.npz
+
+.ipynb_checkpoints/
