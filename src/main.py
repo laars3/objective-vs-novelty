@@ -1,8 +1,9 @@
 from evolution import Evolution
-from fitness import bridge_score, tower_score
+from fitness import bridge_score, tower_score, bc, bc_split
 from agent import RandomAgent, Agent
 import numpy as np, time
 import json, os
+
 
 score_f = "bridge" # possible score function (bridge, tower)
 tasks = {"tower": tower_score, "bridge":bridge_score}
@@ -10,7 +11,7 @@ tasks = {"tower": tower_score, "bridge":bridge_score}
 
 run_config = dict(steps=40, sigma=0.002, generations=200)
 
-arms = [("objective", Agent, "objective"), ("novelty", Agent, "novelty"), ("blend", Agent, "blend")] #("random", RandomAgent, "random")]
+arms = [("noveltysplit", Agent, "novelty", bc_split), ("blendsplit", Agent, "blend", bc_split)] #("random", RandomAgent, "random")] ("objective", Agent, "objective"),
 
 def run_save(evolution, config, run_config, name):
     path = f"runs/{name}_{score_f}_s{config['seed']}.json"
@@ -23,13 +24,13 @@ def run_save(evolution, config, run_config, name):
         json.dump(result,f, indent=2)
 
 
-for name, agent_class, selection in arms:
-    for seed in range(10,30):
+for name, agent_class, selection, bc_func in arms:
+    for seed in range(0,30):
         path=f"runs/{name}_{score_f}_s{seed}.json"
         if os.path.exists(path):
             continue
 
-        config = dict(grid_shape=(24, 8, 12), population_size=50, score_func=tasks[score_f], seed=seed,agent_class=agent_class, selection=selection)
+        config = dict(grid_shape=(24, 8, 12), population_size=50, score_func=tasks[score_f], seed=seed,agent_class=agent_class, selection=selection, bc_func=bc_func)
         print("Config: ", {k: getattr(v, "__name__", v) for k,v in {**config, **run_config}.items()})
         t = time.perf_counter()
 

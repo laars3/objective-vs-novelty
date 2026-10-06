@@ -39,7 +39,9 @@ random changes to their weights.
 Novelty compares structures using five numbers each: block count, height, height
 of the centre of mass, distance of the furthest block from the base, and average
 distance from the base. An archive keeps structures that were novel enough, so
-revisiting old ones earns nothing.
+revisiting old ones earns nothing. A second version, used by the noveltysplit and
+blendsplit arms, splits the furthest distance into reach in front of the base and
+reach behind it, so six numbers.
 
 Arms are compared on the task score, mainly the population mean.
 
@@ -81,8 +83,26 @@ block further back pulls the centre of mass back harder, so the agents use up
 their blocks on weak counterweights. Placing one far behind the base scores
 nothing at the time, which is why no arm finds it.
 
-Every arm makes the same mistake, so the limit is probably the network or the
-behaviour summary.
+Novelty and blend were rerun with the split summary, 30 seeds each.
+
+noveltysplit 6 5 5 6 6 6 6 6 5 5 6 5 7 6 7 6 6 6 5 6 7 6 5 6 5 5 5 6 6 6, median 6
+blendsplit 6 6 7 6 5 6 6 7 8 9 7 6 7 6 7 7 7 7 7 6 5 8 6 8 6 8 5 6 7 7, median 7
+
+Mean reach over the last 50 generations, median across seeds: blendsplit 3.70,
+noveltysplit 2.07.
+
+Noveltysplit and novelty are level on best reach, p = 1.0, and on mean reach,
+p = 0.22. Blendsplit and blend are level on best reach, p = 0.35. Blendsplit is
+ahead of objective on best reach, delta 0.49 and p = 0.001, and level on mean
+reach, p = 0.65.
+
+With the split summary novelty can see back reach, and its archive grows larger,
+median 306 entries against 241. The furthest block behind the base in its best
+structures is still about 3.5 back, against 10 for the reference. A far
+counterweight probably only pays off together with a long reach in front, and on
+its own tips the structure backwards, so novelty does not keep it either.
+
+The summary change made no difference, so the network is the more likely limit.
 
 Earlier bridge versions failed in two ways. On a 12 x 12 x 12 grid a random
 network could already reach the maximum of 5, so evolution had nothing to
@@ -124,16 +144,11 @@ next to existing blocks.
 
 ## To do
 
-1) Split reach in the behaviour summary into reach in front of the base and
-reach behind it, then rerun novelty and blend on bridge. The current summary
-uses one distance from the base for both sides, so a far counterweight does
-not stand out as new. If novelty gets past 6, the summary was the limit. If
-not, the network probably is.
-2) Then try a blend weight that changes during a run.
-3) Decide whether to try a different agent.
-4) Save the best structure of each generation, for a gif of a run.
-5) Figures.
-6) The paper.
+1) Decide whether to try a different agent.
+2) Try a blend weight that changes during a run.
+3) Save the best structure of each generation, for a gif of a run.
+4) Figures.
+5) The paper.
 
 ## Limitations
 
@@ -142,7 +157,8 @@ not, the network probably is.
 3) Scores are whole numbers, so many ties.
 4) Results depend a lot on the starting population.
 5) About 590K weights is a lot to evolve with 50 agents.
-6) One choice of behaviour summary. Results may depend on it.
+6) Two behaviour summaries, both close variants. A different kind might behave
+differently.
 
 ## References
 
