@@ -9,10 +9,10 @@ This is my working log for the project.
 ## Hypotheses
 
 H1. On the bridge task, objective search stalls below what is possible. Holds,
-it stalls at 6 when 11 is possible.
+it stalls around 6 when 11 is possible.
 
 H2. On the bridge task, novelty search ends up ahead of objective search. Not
-supported on 10 seeds.
+supported on 30 seeds.
 
 H3. On the tower task, objective search does at least as well as novelty.
 Holds.
@@ -45,44 +45,51 @@ Arms are compared on the task score, mainly the population mean.
 
 ## Results
 
-Bridge task, population 50, 200 generations, 10 seeds per arm. Each run is
-saved as json in runs/.
+Bridge task, population 50, 200 generations. Objective, blend and novelty have
+30 seeds, random has 10. Each run is saved as json in runs/ and analysis.ipynb
+computes everything below. The stats are two-sided permutation tests on Cliff's
+delta with 10000 shuffles, which is the same test as Mann-Whitney U.
 
 The hand built reference bridge reaches 11 using 23 of the 40 blocks.
 
 Best reach per seed:
 
-objective 6 5 3 6 7 2 7 6 6 8, median 6
-blend 6 5 6 5 7 7 9 8 6 7, median 6.5
-novelty 6 5 5 5 6 6 6 6 6 5, median 6
+objective 6 5 3 6 7 2 7 6 6 8 5 5 6 3 6 8 2 7 6 5 8 5 5 6 5 4 5 2 6 5, median 5.5
+blend 6 5 6 5 7 7 9 8 6 7 7 7 7 5 8 8 7 5 6 6 6 7 7 6 6 5 5 6 6 6, median 6
+novelty 6 5 5 5 6 6 6 6 6 5 6 7 5 6 6 6 5 6 6 6 7 6 6 7 5 5 8 5 5 5, median 6
 random 6 7 5 6 6 6 5 5 7 5, median 6
 
-Mean reach over the last 50 generations, median across seeds: blend 3.80,
-objective 3.45, novelty 1.82, random 1.02.
+Mean reach over the last 50 generations, median across seeds: blend 3.60,
+objective 3.59, novelty 1.97, random 1.02.
 
-Mann-Whitney U across seeds: no two arms differ significantly on best reach.
-Blend against objective gives p = 0.33 and Cliff's delta 0.27. On mean reach,
-objective and blend are both well above novelty and random, p < 0.001, and
-level with each other.
+On best reach blend is ahead of objective, delta 0.38 and p = 0.008, and ahead
+of novelty, delta 0.34 and p = 0.018. Novelty and objective are level, p = 0.33,
+and so are objective and random, p = 0.51.
 
-Objective collapses on two seeds, ending at 3 and 2 after finding its best in
-generation 0 or 1. Blend's worst seed is 5.
+On mean reach blend and objective are level, p = 0.93. Both are well above
+novelty and random, p < 0.001.
+
+Objective collapses on 6 of 30 seeds and ends at 4 or below. Five of them find
+their best in the first 10 generations and never improve. Blend never ends below
+5, and reaches 7 or more on 13 seeds against 6 for objective. On 10 seeds blend's
+lead on best reach was not significant, p = 0.33.
 
 The reason they stall shows in the structures. They all lean right up to the
 balance limit, the reference too. The reference puts its counterweights on
-average 5.5 blocks behind the base. Every arm keeps them 1.4 to 1.9 behind. A
+average 5.5 blocks behind the base. Every arm keeps them 1.7 to 1.9 behind. A
 block further back pulls the centre of mass back harder, so the agents use up
 their blocks on weak counterweights. Placing one far behind the base scores
 nothing at the time, which is why no arm finds it.
 
-Since every arm makes the same mistake, the limit is probably the network.
+Every arm makes the same mistake, so the limit is probably the network or the
+behaviour summary.
 
 Earlier bridge versions failed in two ways. On a 12 x 12 x 12 grid a random
 network could already reach the maximum of 5, so evolution had nothing to
 improve. With balance built into the mask, agents could never over-extend, so
 the task was not deceptive and objective search reached 11.
 
-Tower task, same settings.
+Tower task, same settings, 10 seeds per arm.
 
 Best height per seed:
 
@@ -97,7 +104,7 @@ objective 8.66, novelty 5.47, random 2.21.
 On best height objective and novelty are level, p = 0.72. On mean height
 objective is well above novelty, p < 0.001 and Cliff's delta 0.96. Blend and
 objective are level on both. Objective beats random on best height, p < 0.001,
-which no arm manages on bridge.
+which it does not manage on bridge.
 
 Novelty's mean is about half of objective's on bridge and two thirds on tower.
 It is behind on both tasks, so making the task deceptive did not change which
@@ -117,18 +124,16 @@ next to existing blocks.
 
 ## To do
 
-1) Put the 30 seed bridge results in, once the stats in analysis.ipynb are
-done. First look: blend and objective are level on the plateau, delta 0.016.
-2) Split reach in the behaviour summary into reach in front of the base and
+1) Split reach in the behaviour summary into reach in front of the base and
 reach behind it, then rerun novelty and blend on bridge. The current summary
 uses one distance from the base for both sides, so a far counterweight does
 not stand out as new. If novelty gets past 6, the summary was the limit. If
 not, the network probably is.
-3) Then try a blend weight that changes during a run.
-4) Decide whether to try a different agent.
-5) Save the best structure of each generation, for a gif of a run.
-6) Figures.
-7) The paper.
+2) Then try a blend weight that changes during a run.
+3) Decide whether to try a different agent.
+4) Save the best structure of each generation, for a gif of a run.
+5) Figures.
+6) The paper.
 
 ## Limitations
 
