@@ -117,11 +117,18 @@ next to existing blocks.
 
 ## To do
 
-1) More seeds of blend and objective on bridge, to see if blend's lead holds.
-2) Decide whether to try a different agent.
-3) Save the best structure of each generation, for a gif of a run.
-4) Figures.
-5) The paper.
+1) Put the 30 seed bridge results in, once the stats in analysis.ipynb are
+done. First look: blend and objective are level on the plateau, delta 0.016.
+2) Split reach in the behaviour summary into reach in front of the base and
+reach behind it, then rerun novelty and blend on bridge. The current summary
+uses one distance from the base for both sides, so a far counterweight does
+not stand out as new. If novelty gets past 6, the summary was the limit. If
+not, the network probably is.
+3) Then try a blend weight that changes during a run.
+4) Decide whether to try a different agent.
+5) Save the best structure of each generation, for a gif of a run.
+6) Figures.
+7) The paper.
 
 ## Limitations
 

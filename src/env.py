@@ -22,27 +22,6 @@ class Environment:
             self.grid[coordinates]=0
         return stable
 
-    def valid_move(self): # returns list of positions the agent is allowed to build on this step
-        valid_blocks=[]
-
-        for x in range(self.shape[0]):
-            for y in range(self.shape[1]):
-                for z in range(self.shape[2]):
-                    if self.grid[x,y,z]==1: # skip cells that are already filled
-                        continue
-
-                    is_base = (x,y,z)==self.base
-
-                    # all six face-adjacent neighbors of this cell
-                    neighbors = [(x-1,y,z), (x+1,y,z), (x, y-1,z), (x, y+1, z), (x,y,z-1), (x,y,z+1)]
-                    # support rule: at least one neighbor must be inside the grid and already filled
-                    supported = any(0 <= nx < self.shape[0] and 0 <= ny < self.shape[1] and 0 <= nz < self.shape[2] and self.grid[nx, ny,nz]==1 for nx,ny,nz in neighbors)
-
-                    if (supported or is_base) and (z >0 or is_base):
-                        valid_blocks.append((x,y,z))
-
-        return valid_blocks
-
     def valid_move_new(self): # new valid_move func, instead of checking every single position in the grid, just check neighbors of already filled blocks
 
         valid_blocks = set()
