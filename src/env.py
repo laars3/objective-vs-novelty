@@ -46,7 +46,7 @@ class Environment:
         while steps:
             filled = np.argwhere(grid == 1)
 
-            valid = self.valid_move()
+            valid = self.valid_move_new()
             max_x = filled[:, 0].max()
             min_x = filled[:, 0].min()
 

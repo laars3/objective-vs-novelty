@@ -3,14 +3,16 @@ import numpy as np, torch, random, copy
 from fitness import bc, novelty
 
 class Archive:
-    def __init__(self, rho_min=0.1, max_add=4, patience=5, raise_by=1.05, lower_by=0.95):
+    def __init__(self, rho_min=0.1, max_add=4, patience=5, raise_by=1.05, lower_by=0.95, dims=5):
         self.rho_min = rho_min
         self.max_add = max_add
         self.patience = patience
         self.raise_by = raise_by
         self.lower_by = lower_by
-        self.vectors = np.empty((0,5))
+        self.dims=dims
+        self.vectors = np.empty((0,dims))
         self.gens_since_add =0
+
 
 
     def update(self, bcs,novelties):
@@ -32,7 +34,7 @@ class Archive:
             self.gens_since_add =0
 
 class Evolution:
-    def __init__(self, population_size, grid_shape, score_func, seed, agent_class, selection): # creates population of agents all starting with random weights
+    def __init__(self, population_size, grid_shape, score_func, seed, agent_class, selection, bc_func=bc): # creates population of agents all starting with random weights
         torch.manual_seed(seed)
         random.seed(seed)
         self.best_grid=None
@@ -48,7 +50,8 @@ class Evolution:
         self.best =-1
         self.gen_mean=[]
         self.selection = selection
-        self.archive = Archive()
+        self.archive = Archive(dims=len(bc_func(Environment(grid_shape).grid)))
+        self.bc_func = bc_func
 
     def run(self, steps=20, sigma=0.1, generations=100): # runs one full generation: each agent builds a structure and gets scored
         for generation in range(generations):
@@ -70,7 +73,7 @@ class Evolution:
             if self.selection in ("novelty", "blend"): # selects how to grade agent, taking pure novelty for novelty arm, and blending obj and nov for blend arm
                 rows=[]
                 for g in self.grids:
-                    rows.append(bc(g))
+                    rows.append(self.bc_func(g))
                 bcs = np.array(rows)
                 nov = novelty(bcs, self.archive.vectors)
                 self.archive.update(bcs, nov)

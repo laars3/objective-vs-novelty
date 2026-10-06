@@ -28,6 +28,30 @@ def bc(grid, budget=40): # 5 num summary of structure, novelty measures against 
 
     return np.array([block_count, max_height,com_height, max_reach, com_reach])
 
+def bc_split(grid, budget=40): # bc with split reach (so back and front separate) so counterweights can be compared
+    filled = np.argwhere(grid==1)
+    nx,ny,nz = grid.shape
+
+    block_count = (len(filled)/(budget+1))
+
+    max_height=(filled[:, 2].max()/(nz-1))
+    com_height = filled[:, 2].mean()/(nz-1)
+
+    corner = np.hypot(max(nx//2, nx-1-nx//2), max(ny//2, ny-1-ny//2))
+    horizontal_dist = np.hypot((filled[:, 0]-(nx//2)), filled[:, 1]-(ny//2))
+
+    base_x=grid.shape[0]//2
+
+    max_x=filled[:, 0].max()
+    min_x=filled[:, 0].min()
+
+    front_reach=(max_x - base_x)/(nx-1-base_x)
+    back_reach = (base_x- min_x)/base_x
+
+    com_reach = horizontal_dist.mean()/ corner
+
+    return np.array([block_count, max_height,com_height, front_reach,back_reach, com_reach])
+
 def novelty(bcs, archive, k=15): # how isolated structure is in bc space per agent
 
     rows=[]
