@@ -102,7 +102,8 @@ structures is still about 3.5 back, against 10 for the reference. A far
 counterweight probably only pays off together with a long reach in front, and on
 its own tips the structure backwards, so novelty does not keep it either.
 
-The summary change made no difference, so the network is the more likely limit.
+The summary change made no difference, so the network is the more likely limit,
+at least within 200 generations.
 
 Earlier bridge versions failed in two ways. On a 12 x 12 x 12 grid a random
 network could already reach the maximum of 5, so evolution had nothing to
@@ -144,11 +145,15 @@ next to existing blocks.
 
 ## To do
 
-1) Decide whether to try a different agent.
-2) Try a blend weight that changes during a run.
-3) Save the best structure of each generation, for a gif of a run.
-4) Figures.
-5) The paper.
+1) Figure of mean reach over generations, to see whether the arms are still
+climbing at generation 200.
+2) Run a few seeds of objective and blend for 2000 generations. Also log how far
+the weights move from generation 0 and how far back the population builds, to
+see whether the population is still changing while the score is flat.
+3) Decide whether to try a different agent.
+4) Try a blend weight that changes during a run.
+5) Save the best structure of each generation, for a gif of a run.
+6) The paper.
 
 ## Limitations
 
@@ -159,6 +164,8 @@ next to existing blocks.
 5) About 590K weights is a lot to evolve with 50 agents.
 6) Two behaviour summaries, both close variants. A different kind might behave
 differently.
+7) Runs are 200 generations. A jump after a long flat stretch, like in grokking,
+cannot be ruled out.
 
 ## References
 
