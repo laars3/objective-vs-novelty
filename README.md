@@ -150,9 +150,8 @@ counterweight. The plan is fixed here so it does not keep growing.
 
 1) Figure of mean reach over generations, to see whether the arms are still
 climbing at generation 200.
-2) Run 5 seeds each of objective and blend for 2000 generations. Also log how
-far the weights move from generation 0 and how far back the population builds.
-If something jumps, add seeds to confirm it and go to the paper. If not, go to 3.
+2) Run 5 seeds each of objective and blend for 2000 generations. If something
+jumps, add seeds to confirm it and go to the paper. If not, go to 3.
 3) One alternative agent, a small network that scores each cell from local
 features. Objective, novelty and blend on bridge, 30 seeds. This is the last
 experiment whatever it shows.
