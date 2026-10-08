@@ -25,7 +25,7 @@ def run_save(evolution, config, run_config, name):
 
 
 for name, agent_class, selection, bc_func in arms:
-    for seed in range(3):
+    for seed in range(5):
         path=f"runs/{name}_{score_f}_s{seed}.json"
         if os.path.exists(path):
             continue
