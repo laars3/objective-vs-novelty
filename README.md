@@ -76,13 +76,6 @@ their best in the first 10 generations and never improve. Blend never ends below
 5, and reaches 7 or more on 13 seeds against 6 for objective. On 10 seeds blend's
 lead on best reach was not significant, p = 0.33.
 
-The reason they stall shows in the structures. They all lean right up to the
-balance limit, the reference too. The reference puts its counterweights on
-average 5.5 blocks behind the base. Every arm keeps them 1.7 to 1.9 behind. A
-block further back pulls the centre of mass back harder, so the agents use up
-their blocks on weak counterweights. Placing one far behind the base scores
-nothing at the time, which is why no arm finds it.
-
 Novelty and blend were rerun with the split summary, 30 seeds each.
 
 noveltysplit 6 5 5 6 6 6 6 6 5 5 6 5 7 6 7 6 6 6 5 6 7 6 5 6 5 5 5 6 6 6, median 6
@@ -96,14 +89,25 @@ p = 0.22. Blendsplit and blend are level on best reach, p = 0.35. Blendsplit is
 ahead of objective on best reach, delta 0.49 and p = 0.001, and level on mean
 reach, p = 0.65.
 
-With the split summary novelty can see back reach, and its archive grows larger,
-median 306 entries against 241. The furthest block behind the base in its best
-structures is still about 3.5 back, against 10 for the reference. A far
-counterweight probably only pays off together with a long reach in front, and on
-its own tips the structure backwards, so novelty does not keep it either.
+The split summary was tried because the counterweights in the best structures
+sit much closer to the base than in the reference, 1.7 to 1.9 blocks behind on
+average against 5.5, so far counterweights looked like the missing step. With
+it the archive grows larger, median 306 entries against 241, but the best
+structures still reach only about 3.5 behind the base.
 
-The summary change made no difference, so the network is the more likely limit,
-at least within 200 generations.
+That explanation was wrong. A simple builder that extends the bridge and adds a
+counterweight only when balance needs one reaches 11 with counterweights at most
+3 behind the base in 31 blocks, and at most 2 behind in 38. Close counterweights
+are enough.
+
+What stops the agents is running out of blocks. Many best structures use 38 or
+more of the 41 blocks, counting the base: 13 of 30 seeds for objective, 26 of 30
+for blend. They put a median of 7.5 to 12 blocks on top of the base, where they
+do nothing for reach or balance, and their arm costs 2.2 to 2.6 blocks per step
+of reach where 1 is enough.
+
+So within 200 generations the limit is how well they use their blocks, and the
+summary change did not help with that.
 
 Earlier bridge versions failed in two ways. On a 12 x 12 x 12 grid a random
 network could already reach the maximum of 5, so evolution had nothing to
