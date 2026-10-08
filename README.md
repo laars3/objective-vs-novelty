@@ -145,15 +145,21 @@ next to existing blocks.
 
 ## To do
 
+The main question is answered. What is left is why every arm stalls at the
+counterweight. The plan is fixed here so it does not keep growing.
+
 1) Figure of mean reach over generations, to see whether the arms are still
 climbing at generation 200.
-2) Run a few seeds of objective and blend for 2000 generations. Also log how far
-the weights move from generation 0 and how far back the population builds, to
-see whether the population is still changing while the score is flat.
-3) Decide whether to try a different agent.
-4) Try a blend weight that changes during a run.
-5) Save the best structure of each generation, for a gif of a run.
-6) The paper.
+2) Run 5 seeds each of objective and blend for 2000 generations. Also log how
+far the weights move from generation 0 and how far back the population builds.
+If something jumps, add seeds to confirm it and go to the paper. If not, go to 3.
+3) One alternative agent, a small network that scores each cell from local
+features. Objective, novelty and blend on bridge, 30 seeds. This is the last
+experiment whatever it shows.
+4) The paper.
+
+Left for future work: a blend weight that changes during a run, other behaviour
+summaries, other tasks, real physics. A gif of a run if there is time.
 
 ## Limitations
 
