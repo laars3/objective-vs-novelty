@@ -9,9 +9,9 @@ score_f = "bridge" # possible score function (bridge, tower)
 tasks = {"tower": tower_score, "bridge":bridge_score}
 
 
-run_config = dict(steps=40, sigma=0.002, generations=200)
+run_config = dict(steps=40, sigma=0.002, generations=2000)
 
-arms = [("noveltysplit", Agent, "novelty", bc_split), ("blendsplit", Agent, "blend", bc_split)] #("random", RandomAgent, "random")] ("objective", Agent, "objective"),
+arms = [("blendlong", Agent, "blend", bc), ("objectivelong", Agent, "objective", bc)] #("random", RandomAgent, "random")] ,("noveltysplit", Agent, "novelty", bc_split), 
 
 def run_save(evolution, config, run_config, name):
     path = f"runs/{name}_{score_f}_s{config['seed']}.json"
@@ -25,7 +25,7 @@ def run_save(evolution, config, run_config, name):
 
 
 for name, agent_class, selection, bc_func in arms:
-    for seed in range(0,30):
+    for seed in range(3):
         path=f"runs/{name}_{score_f}_s{seed}.json"
         if os.path.exists(path):
             continue
