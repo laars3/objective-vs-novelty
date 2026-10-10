@@ -8,8 +8,9 @@ This is my working log for the project.
 
 ## Hypotheses
 
-H1. On the bridge task, objective search stalls below what is possible. Holds,
-it stalls around 6 when 11 is possible.
+H1. On the bridge task, objective search stalls below what is possible. Holds
+at 200 generations, where it stalls around 6 when 11 is possible. Over 2000
+generations it keeps climbing slowly.
 
 H2. On the bridge task, novelty search ends up ahead of objective search. Not
 supported on 30 seeds.
@@ -109,6 +110,21 @@ of reach where 1 is enough.
 So within 200 generations the limit is how well they use their blocks, and the
 summary change did not help with that.
 
+Objective and blend were rerun for 2000 generations, 5 seeds each so far. The
+first 200 generations match the 200 generation runs exactly.
+
+objectivelong 6 10 7 9 8, median 8
+blendlong 8 9 8 9 9, median 9
+
+Mean reach over the last 50 generations, median across seeds: objectivelong
+6.76, blendlong 6.01.
+
+Four of five objective seeds kept improving after generation 200, the latest at
+generation 1847. Every gain was one step at a time, with no sudden jump. Seed 2
+sat at 3 until generation 371 and ended at 7, so the objective collapses at 200
+generations look like slow starts. Blend is a little ahead on best reach and
+objective on mean reach. With 5 seeds neither difference is tested.
+
 Earlier bridge versions failed in two ways. On a 12 x 12 x 12 grid a random
 network could already reach the maximum of 5, so evolution had nothing to
 improve. With balance built into the mask, agents could never over-extend, so
@@ -149,17 +165,17 @@ next to existing blocks.
 
 ## To do
 
-The main question is answered. What is left is why every arm stalls at the
-counterweight. The plan is fixed here so it does not keep growing.
+The main question is answered at 200 generations. The plan is fixed here so it
+does not keep growing.
 
-1) Figure of mean reach over generations, to see whether the arms are still
-climbing at generation 200.
-2) Run 5 seeds each of objective and blend for 2000 generations. If something
-jumps, add seeds to confirm it and go to the paper. If not, go to 3.
-3) One alternative agent, a small network that scores each cell from local
-features. Objective, novelty and blend on bridge, 30 seeds. This is the last
-experiment whatever it shows.
-4) The paper.
+1) Finish 10 seeds each of objectivelong and blendlong. Seeds 5 to 9 run on a
+second machine, which first needs a check that it gives the same numbers.
+2) One alternative agent, LocalAgent in agent.py. It scores each valid cell with
+one small network shared by all cells, from 12 numbers about that cell: its
+neighbours, its position, how far the structure leans, and blocks used. 225
+weights, sigma 0.03. Objective, novelty and blend on bridge, 30 seeds. This is
+the last experiment whatever it shows.
+3) The paper.
 
 Left for future work: a blend weight that changes during a run, other behaviour
 summaries, other tasks, real physics. A gif of a run if there is time.
@@ -173,8 +189,8 @@ summaries, other tasks, real physics. A gif of a run if there is time.
 5) About 590K weights is a lot to evolve with 50 agents.
 6) Two behaviour summaries, both close variants. A different kind might behave
 differently.
-7) Runs are 200 generations. A jump after a long flat stretch, like in grokking,
-cannot be ruled out.
+7) Most runs are 200 generations. The 2000 generation runs were still climbing
+at the end, so where the arms would level off is not known.
 
 ## References
 
