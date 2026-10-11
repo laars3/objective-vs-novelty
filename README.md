@@ -3,6 +3,8 @@
 Small neural networks build 3D structures one block at a time. The networks are
 evolved, there is no backprop. The question is whether novelty search beats
 plain objective search when the task is deceptive, and loses when it is not.
+Two agents are compared, since the same task can be deceptive for one agent and
+easy for another.
 
 This is my working log for the project.
 
@@ -29,8 +31,17 @@ Bridge scores how far the structure reaches in +x past the base. Tower scores
 height. Both top out at 11. Building straight up never shifts the centre of mass,
 so tower is easy and bridge is the deceptive one.
 
-The agent is an MLP that scores every cell of the grid and places the highest
-legal one. A random agent that places anywhere legal is the baseline.
+The first agent is an MLP that takes the whole grid and scores every cell, then
+places the highest legal one. It has about 590K weights. A random agent that
+places anywhere legal is the baseline.
+
+The second agent, LocalAgent, scores each legal cell on its own with one small
+network shared by all cells. Its input is 12 numbers about that cell: which of
+its 6 neighbours are filled, its position relative to the base, how far the
+structure leans in x and y, and how many blocks are used. It has 225 weights.
+
+Sigma is set so a mutation is about 10% of a starting weight for both agents,
+0.002 for the MLP and 0.03 for LocalAgent.
 
 There are four arms. Random, objective (selects on reach), novelty (selects on
 how different a structure is from past ones), and blend (half each, both scaled
@@ -151,6 +162,30 @@ Novelty's mean is about half of objective's on bridge and two thirds on tower.
 It is behind on both tasks, so making the task deceptive did not change which
 one wins.
 
+LocalAgent on bridge, 200 generations, 10 seeds per arm so far.
+
+objectivelocal 11 on all 10 seeds
+blendlocal 11 on all 10 seeds
+noveltylocal 7 11 11 11 11 11 11 11 11 11
+
+Median generation where 11 was first reached: objective 5.5, blend 4, novelty
+14. On seeds 7 to 9 a network in the starting population already built it.
+
+Mean reach over the last 50 generations, median across seeds: objectivelocal
+9.91, blendlocal 9.47, noveltylocal 5.48.
+
+On mean reach objective is above novelty on every seed, delta 1.0 and p < 0.001.
+Blend is below objective, delta -0.66 and p = 0.013. Objectivelocal beats the
+MLP objective arm on both best and mean reach, p < 0.001.
+
+Most best structures are a flat bridge one block above the ground, using 23 to
+39 blocks. The rest are a column up to the top with a beam across the whole
+grid, which is allowed because balance is only a centre of mass check.
+
+So with LocalAgent bridge stops being deceptive and looks like the tower task.
+Objective wins, and the novelty half of blend only slows it down. Novelty did
+not win with either agent.
+
 ## Info Collected
 
 1) sigma has to be small. The starting weights are around 0.01 to 0.05, so a
@@ -165,24 +200,25 @@ next to existing blocks.
 
 ## To do
 
-The main question is answered at 200 generations. The plan is fixed here so it
-does not keep growing.
+The paper compares search method and agent together. The plan is fixed here so
+it does not keep growing.
 
-1) Finish 10 seeds each of objectivelong and blendlong. Seeds 5 to 9 run on a
+1) LocalAgent to 30 seeds per arm.
+2) Finish 10 seeds each of objectivelong and blendlong. Seeds 5 to 9 run on a
 second machine, which first needs a check that it gives the same numbers.
-2) One alternative agent, LocalAgent in agent.py. It scores each valid cell with
-one small network shared by all cells, from 12 numbers about that cell: its
-neighbours, its position, how far the structure leans, and blocks used. 225
-weights, sigma 0.03. Objective, novelty and blend on bridge, 30 seeds. This is
-the last experiment whatever it shows.
-3) The paper.
+3) LocalAgent without the two lean inputs, objective, 10 seeds. LocalAgent
+differs from the MLP in two ways, the shared network and seeing the lean, and
+this shows which one matters.
+4) Figure of the best structures in 3D, the reference next to each agent.
+5) The paper.
 
 Left for future work: a blend weight that changes during a run, other behaviour
 summaries, other tasks, real physics. A gif of a run if there is time.
 
 ## Limitations
 
-1) Balance is only a centre of mass check.
+1) Balance is only a centre of mass check, so a beam on a single column counts as
+balanced.
 2) A collapse keeps what stood before it rather than scoring zero.
 3) Scores are whole numbers, so many ties.
 4) Results depend a lot on the starting population.
