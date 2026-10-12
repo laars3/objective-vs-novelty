@@ -10,7 +10,7 @@ tasks = {"tower": tower_score, "bridge":bridge_score}
 
 run_config = dict(steps=40, sigma=0.03, generations=200)
 
-arms = [("objectivenolean", LocalAgent, "objective", bc)]
+arms = [("objectivenolean", LocalAgentNoCOM, "objective", bc)]
 
 def run_save(evolution, config, run_config, name):
     path = f"runs/{name}_{score_f}_s{config['seed']}.json"
