@@ -20,6 +20,9 @@ supported on 30 seeds.
 H3. On the tower task, objective search does at least as well as novelty.
 Holds.
 
+H4. LocalAgent without the two lean inputs still reaches 11 on most bridge
+seeds with objective search. Written before the runs.
+
 ## Setup
 
 The grid is 24 x 8 x 12, with a base block in the middle of the floor. Each
