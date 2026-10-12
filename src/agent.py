@@ -49,7 +49,7 @@ class RandomAgent: # random agent
         pass # since random, no real growth happens
 
 class LocalAgent(nn.Module): # scores each valid cell from local nums, one small net shared by every cell
-    def __init__(self, shape, n_features=12, hidden=16):
+    def __init__(self, shape, n_features=12, hidden=16, flag_lean=True):
         super().__init__()
         self.shape = shape
         self.cells = shape[0] * shape[1] * shape[2]
@@ -57,6 +57,7 @@ class LocalAgent(nn.Module): # scores each valid cell from local nums, one small
         self.layer1 = nn.Linear(n_features, hidden) # turns the 12 cell nums into 16 combinations of them
         self.layer2 = nn.Linear(hidden, 1) # turns the 16 combinations into 1 score for that cell
         # 225 weights total, so sigma has to be bigger than for Agent (weights start around 0.3 not 0.02)
+        self.flag_lean = flag_lean
 
     def features(self, grid, valid_moves): # 12 nums per valid cell (neighbors, position, lean, blocks used)
         nz = self.shape[2]
@@ -73,7 +74,13 @@ class LocalAgent(nn.Module): # scores each valid cell from local nums, one small
             X, Y, Z = x+1, y+1, z+1
             neighbors = [p[X-1,Y,Z], p[X+1,Y,Z], p[X,Y-1,Z], p[X,Y+1,Z], p[X,Y,Z-1], p[X,Y,Z+1]] # 1 if filled, back/front, sides, below/above
             position = [(x-self.base_x)/self.base_x, (y-self.base_y)/self.base_y, z/(nz-1)] # negative x means behind the base
-            rows.append(neighbors + position + [com_x, com_y, used]) # one row per valid cell
+
+            row = neighbors + position
+            if self.flag_lean: # ignore com as param if flag lean not T
+                row= row + [com_x, com_y]
+            row = row + [used]
+            rows.append(row)
+
         return torch.from_numpy(np.array(rows, dtype=np.float32)) # (n_valid, 12)
 
     def forward(self, grid, valid_moves):
@@ -92,3 +99,7 @@ class LocalAgent(nn.Module): # scores each valid cell from local nums, one small
         for param in self.parameters():
             change=torch.randn_like(param)*sigma
             param.data += change
+
+class LocalAgentNoCOM(LocalAgent): # interface for localagent with F flag lean
+    def __init__(self,shape):
+        super().__init__(shape, n_features=10, flag_lean=False)

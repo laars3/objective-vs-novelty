@@ -42,6 +42,9 @@ The second agent, LocalAgent, scores each legal cell on its own with one small
 network shared by all cells. Its input is 12 numbers about that cell: which of
 its 6 neighbours are filled, its position relative to the base, how far the
 structure leans in x and y, and how many blocks are used. It has 225 weights.
+LocalAgentNoCOM is the same agent without the two lean inputs, with 10 inputs
+and 193 weights. Each input connects to all 16 hidden units, which is why
+dropping two removes 32 weights.
 
 Sigma is set so a mutation is about 10% of a starting weight for both agents,
 0.002 for the MLP and 0.03 for LocalAgent.

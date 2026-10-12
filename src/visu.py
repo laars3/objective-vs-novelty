@@ -1,6 +1,5 @@
 from pathlib import Path
-
-import numpy as np, pyvista as pv, json, pathlib
+import numpy as np, pyvista as pv, json
 
 visu_file= Path("runs/novelty_bridge_s16.json")
 
