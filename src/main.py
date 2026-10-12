@@ -1,17 +1,17 @@
 from evolution import Evolution
 from fitness import bridge_score, tower_score, bc, bc_split
-from agent import RandomAgent, Agent
+from agent import RandomAgent, Agent, LocalAgent
 import numpy as np, time
 import json, os
 
 
-score_f = "bridge" # possible score function (bridge, tower)
+score_f = "bridge" # possible score functions (bridge, tower)
 tasks = {"tower": tower_score, "bridge":bridge_score}
 
 
-run_config = dict(steps=40, sigma=0.002, generations=2000)
+run_config = dict(steps=40, sigma=0.03, generations=200)
 
-arms = [("blendlong", Agent, "blend", bc), ("objectivelong", Agent, "objective", bc)] #("random", RandomAgent, "random")] ,("noveltysplit", Agent, "novelty", bc_split), 
+arms = [("objectivelocal", LocalAgent, "objective", bc), ("noveltylocal", LocalAgent, "novelty", bc), ("blendlocal", LocalAgent, "blend", bc)]
 
 def run_save(evolution, config, run_config, name):
     path = f"runs/{name}_{score_f}_s{config['seed']}.json"
@@ -25,7 +25,7 @@ def run_save(evolution, config, run_config, name):
 
 
 for name, agent_class, selection, bc_func in arms:
-    for seed in range(5):
+    for seed in range(30):
         path=f"runs/{name}_{score_f}_s{seed}.json"
         if os.path.exists(path):
             continue
