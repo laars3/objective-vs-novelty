@@ -121,11 +121,12 @@ of reach where 1 is enough.
 So within 200 generations the limit is how well they use their blocks, and the
 summary change did not help with that.
 
-Objective and blend were rerun for 2000 generations, 5 seeds each so far. The
-first 200 generations match the 200 generation runs exactly.
+Objective and blend were rerun for 2000 generations, 5 objective seeds and 7
+blend seeds so far. The first 200 generations match the 200 generation runs
+exactly.
 
 objectivelong 6 10 7 9 8, median 8
-blendlong 8 9 8 9 9, median 9
+blendlong 8 9 8 9 9 9 10, median 9
 
 Mean reach over the last 50 generations, median across seeds: objectivelong
 6.76, blendlong 6.01.
@@ -133,8 +134,9 @@ Mean reach over the last 50 generations, median across seeds: objectivelong
 Four of five objective seeds kept improving after generation 200, the latest at
 generation 1847. Every gain was one step at a time, with no sudden jump. Seed 2
 sat at 3 until generation 371 and ended at 7, so the objective collapses at 200
-generations look like slow starts. Blend is a little ahead on best reach and
-objective on mean reach. With 5 seeds neither difference is tested.
+generations look like slow starts. Blend gained at most 2 at a time. Blend is a
+little ahead on best reach and objective on mean reach. Neither difference is
+tested yet.
 
 Earlier bridge versions failed in two ways. On a 12 x 12 x 12 grid a random
 network could already reach the maximum of 5, so evolution had nothing to
@@ -162,24 +164,26 @@ Novelty's mean is about half of objective's on bridge and two thirds on tower.
 It is behind on both tasks, so making the task deceptive did not change which
 one wins.
 
-LocalAgent on bridge, 200 generations, 10 seeds per arm so far.
+LocalAgent on bridge, 200 generations, 30 seeds per arm.
 
-objectivelocal 11 on all 10 seeds
-blendlocal 11 on all 10 seeds
-noveltylocal 7 11 11 11 11 11 11 11 11 11
+objectivelocal 11 on all 30 seeds
+blendlocal 11 on all 30 seeds
+noveltylocal 11 on 27 seeds, the other three end at 7, 4 and 7
 
-Median generation where 11 was first reached: objective 5.5, blend 4, novelty
-14. On seeds 7 to 9 a network in the starting population already built it.
+Median generation where 11 was first reached: objective 7.5, blend 10.5,
+novelty 12. On seeds 7, 8, 9 and 26 a network in the starting population
+already built it.
 
 Mean reach over the last 50 generations, median across seeds: objectivelocal
-9.91, blendlocal 9.47, noveltylocal 5.48.
+9.79, blendlocal 9.45, noveltylocal 5.24.
 
 On mean reach objective is above novelty on every seed, delta 1.0 and p < 0.001.
-Blend is below objective, delta -0.66 and p = 0.013. Objectivelocal beats the
-MLP objective arm on both best and mean reach, p < 0.001.
+Blend is below objective, delta -0.74 and p < 0.001. On best reach the three
+arms are level, since nearly every seed hits 11. Objectivelocal beats the MLP
+objective arm on both best and mean reach, p < 0.001.
 
 Most best structures are a flat bridge one block above the ground, using 23 to
-39 blocks. The rest are a column up to the top with a beam across the whole
+41 blocks. The rest are a column up to the top with a beam across the whole
 grid, which is allowed because balance is only a centre of mass check.
 
 So with LocalAgent bridge stops being deceptive and looks like the tower task.
@@ -203,14 +207,14 @@ next to existing blocks.
 The paper compares search method and agent together. The plan is fixed here so
 it does not keep growing.
 
-1) LocalAgent to 30 seeds per arm.
-2) Finish 10 seeds each of objectivelong and blendlong. Seeds 5 to 9 run on a
-second machine, which first needs a check that it gives the same numbers.
-3) LocalAgent without the two lean inputs, objective, 10 seeds. LocalAgent
+1) Finish 10 seeds each of objectivelong and blendlong, which leaves
+objectivelong seeds 5 to 9 and blendlong seeds 7 to 9. A second machine first
+needs a check that it gives the same numbers.
+2) LocalAgent without the two lean inputs, objective, 10 seeds. LocalAgent
 differs from the MLP in two ways, the shared network and seeing the lean, and
 this shows which one matters.
-4) Figure of the best structures in 3D, the reference next to each agent.
-5) The paper.
+3) Figure of the best structures in 3D, the reference next to each agent.
+4) The paper.
 
 Left for future work: a blend weight that changes during a run, other behaviour
 summaries, other tasks, real physics. A gif of a run if there is time.
@@ -219,7 +223,7 @@ summaries, other tasks, real physics. A gif of a run if there is time.
 
 1) Balance is only a centre of mass check, so a beam on a single column counts as
 balanced.
-2) A collapse keeps what stood before it rather than scoring zero.
+2) A collapse keeps the blocks placed before it, and those still score.
 3) Scores are whole numbers, so many ties.
 4) Results depend a lot on the starting population.
 5) About 590K weights is a lot to evolve with 50 agents.
