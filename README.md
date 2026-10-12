@@ -20,8 +20,8 @@ supported on 30 seeds.
 H3. On the tower task, objective search does at least as well as novelty.
 Holds.
 
-H4. LocalAgent without the two lean inputs still reaches 11 on most bridge
-seeds with objective search. Written before the runs.
+H4. LocalAgent without the two lean inputs does much worse on bridge than
+LocalAgent with objective search. Holds, mean reach 2.92 against 9.91.
 
 ## Setup
 
@@ -196,6 +196,21 @@ So with LocalAgent bridge stops being deceptive and looks like the tower task.
 Objective wins, and the novelty half of blend only slows it down. Novelty did
 not win with either agent.
 
+LocalAgentNoCOM on bridge, objective, 200 generations, 10 seeds.
+
+objectivenolean 8 4 6 6 9 6 8 7 6 11, median 6.5
+
+Only seed 9 reached 11, at generation 100. Mean reach over the last 50
+generations, median across seeds: 2.92, against 9.91 for objectivelocal on the
+same seeds.
+
+Against objectivelocal it is behind on best reach, delta -0.90, and on mean
+reach, delta -1.0, both p < 0.001. Against the MLP objective arm it is level on
+mean reach, p = 0.31, and a little ahead on best reach, delta 0.51 and p = 0.014.
+
+So most of what LocalAgent gains comes from seeing the lean. Without it the
+shared network does about as well as the MLP on the population mean.
+
 ## Info Collected
 
 1) sigma has to be small. The starting weights are around 0.01 to 0.05, so a
@@ -216,11 +231,8 @@ it does not keep growing.
 1) Finish 10 seeds each of objectivelong and blendlong, which leaves
 objectivelong seeds 5 to 9 and blendlong seeds 7 to 9. A second machine first
 needs a check that it gives the same numbers.
-2) LocalAgent without the two lean inputs, objective, 10 seeds. LocalAgent
-differs from the MLP in two ways, the shared network and seeing the lean, and
-this shows which one matters.
-3) Figure of the best structures in 3D, the reference next to each agent.
-4) The paper.
+2) Figure of the best structures in 3D, the reference next to each agent.
+3) The paper.
 
 Left for future work: a blend weight that changes during a run, other behaviour
 summaries, other tasks, real physics. A gif of a run if there is time.
