@@ -27,6 +27,12 @@ def render(grid, plotter):
 
     plotter.add_mesh(cubes,scalars="role", cmap="coolwarm",show_edges=True, edge_color='black', line_width=1, show_scalar_bar=False)
 
+    nx,ny,nz = grid.shape
+
+    box = pv.Box(bounds=(-0.5, nx - 0.5,-0.5, ny-0.5, -0.5, nz-0.5))
+
+    plotter.add_mesh(box, style="wireframe", color="grey")
+
 if __name__ == "__main__":
     from env import Environment
     env=Environment((24,8,12))
@@ -40,9 +46,11 @@ if __name__ == "__main__":
     plotter.background_color = 'white'
 
     plotter.subplot(0,0)
-    render(load_grid(visu_file), plotter)
+    render(ref, plotter)
 
     plotter.subplot(0,1)
     render(load_grid(visu_file),plotter)
+
+    plotter.link_views()
     plotter.show()
     print("success")
