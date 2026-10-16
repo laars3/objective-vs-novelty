@@ -43,9 +43,12 @@ class Evolution:
         self.seed = seed
         self.grid_shape = grid_shape
         self.grids=[None]*population_size
-        self.population=[agent_class(grid_shape) for _ in range(population_size)]
+        self.population=[]
+        for _ in range(population_size):
+            self.population.append(agent_class(grid_shape))
         self.scores=[0]*population_size # scores start at 0, filled in after each agent builds
         self.gen_best=[]
+        self.gen_blocks=[]
         self.best_so_far=[]
         self.best =-1
         self.gen_mean=[]
@@ -99,6 +102,8 @@ class Evolution:
             # log reach so same measurment for arm
             maximum=max(self.scores)
             self.gen_best.append(maximum)
+            i = self.scores.index(maximum)
+            self.gen_blocks.append(np.argwhere(self.grids[i]==1).tolist())
             if maximum > self.best: # new best
                 self.best=maximum
                 self.best_grid=self.grids[self.scores.index(maximum)]
@@ -109,7 +114,9 @@ class Evolution:
             # selection for each arm based on its own rank_score
             ranked=sorted(range(len(self.scores)), key=lambda i: rank_scores[i], reverse=True) # ranks scores assigned to index
             keep=len(self.population)//2 # drops lower half of scores
-            survivors=[self.population[i] for i in ranked[:keep]]
+            survivors=[]
+            for i in ranked[:keep]:
+                survivors.append(self.population[i])
 
             next_gen= [survivors[0]] # elitism
             while len(next_gen) < len(self.population): # repopulates the next generation list with random survivor and applies slight deviation
