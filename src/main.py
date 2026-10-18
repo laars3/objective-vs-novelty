@@ -58,10 +58,10 @@ for name, agent_class, selection, bc_func in arms:
         print("Config: ", config_names(config, run_config))
         t = time.perf_counter()
 
-        evolution = Evolution(**config)
-        evolution.run(**run_config)
-        run_save(evolution, config, run_config, name)
+        ev = Evolution(**config)
+        ev.run(**run_config)
+        run_save(ev, config, run_config, name)
 
-        print(name, seed, "best", evolution.best, "mean", round(evolution.gen_mean[-1], 2), "time",round(time.perf_counter() - t))
+        print(name, seed, "best", ev.best, "mean", round(ev.gen_mean[-1], 2), "time",round(time.perf_counter() - t))
 
 
