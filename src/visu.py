@@ -66,22 +66,16 @@ def render(grid, plotter):
 
 if __name__ == "__main__":
     from env import Environment
+    import os
+
+    os.makedirs("gifs", exist_ok=True, )
     env=Environment((24,8,12))
+
+    gif_names= ("objectivelocal_bridge_s20", "objectivenolean_bridge_s2", "objective_bridge_s23", "novelty_bridge_s22", "blend_bridge_s28")
 
     ref=env.best_possible_bridge(40)
 
-    plotter = pv.Plotter(shape=(1,2))
+    for gif in gif_names:
+        gify("frames/"+ gif+".json", "gifs/" + gif + ".gif", ref)
 
-    # hud stuffs
-    plotter.show_axes()
-    plotter.background_color = 'white'
-
-    plotter.subplot(0,0)
-    render(ref, plotter)
-
-    plotter.subplot(0,1)
-    render(load_grid(visu_file),plotter)
-
-    plotter.link_views()
-    plotter.show()
     print("success")
