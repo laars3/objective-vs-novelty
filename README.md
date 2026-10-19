@@ -127,6 +127,28 @@ of reach where 1 is enough.
 So within 200 generations the limit is how well they use their blocks, and the
 summary change did not help with that.
 
+The gifs show one seed per arm, the one closest to its arm's median on best
+reach first and then on mean reach. The left side is the reference bridge, the
+right side is the best structure of each generation. Red blocks are in front of
+the base, blue behind it and grey above it. The per generation structures come
+from rerunning the same seeds with src/record.py, which matches the saved runs
+exactly.
+
+![objective seed 23](gifs/objective_bridge_s23.gif)
+
+Objective seed 23. Reach 6 by generation 34, using all 40 blocks, and the
+structure barely changes after that.
+
+![novelty seed 22](gifs/novelty_bridge_s22.gif)
+
+Novelty seed 22. The structure keeps changing shape. Reach is 5 in most
+generations and drops to 3 or 4 in about a quarter of them.
+
+![blend seed 28](gifs/blend_bridge_s28.gif)
+
+Blend seed 28. The structure also keeps changing, at reach 5 for most of the
+run and 6 in the last generations.
+
 Objective and blend were rerun for 2000 generations, 5 objective seeds and 7
 blend seeds so far. The first 200 generations match the 200 generation runs
 exactly.
@@ -196,6 +218,11 @@ So with LocalAgent bridge stops being deceptive and looks like the tower task.
 Objective wins, and the novelty half of blend only slows it down. Novelty did
 not win with either agent.
 
+![objectivelocal seed 20](gifs/objectivelocal_bridge_s20.gif)
+
+Objectivelocal seed 20. The run starts from a column with reach 3 and ends on
+the same bridge as the reference.
+
 LocalAgentNoCOM on bridge, objective, 200 generations, 10 seeds.
 
 objectivenolean 8 4 6 6 9 6 8 7 6 11, median 6.5
@@ -210,6 +237,11 @@ mean reach, p = 0.31, and a little ahead on best reach, delta 0.51 and p = 0.014
 
 So most of what LocalAgent gains comes from seeing the lean. Without it the
 shared network does about as well as the MLP on the population mean.
+
+![objectivenolean seed 2](gifs/objectivenolean_bridge_s2.gif)
+
+Objectivenolean seed 2. By generation 50 it builds a column of about 10 blocks
+on the base with an arm of 6, and it keeps that structure to the end.
 
 ## Info Collected
 
@@ -227,15 +259,18 @@ next to existing blocks.
 
 The paper compares search method and agent together. The plan is fixed here so
 it does not keep growing.
+* maybe also test slightly different elitism func/approach? change elitism from internal weight to keeping only ones with furthest reach
+* maybe change gifs to select random structure from gen best with highest score for a more interactive gif
 
 1) Finish 10 seeds each of objectivelong and blendlong, which leaves
 objectivelong seeds 5 to 9 and blendlong seeds 7 to 9. A second machine first
 needs a check that it gives the same numbers.
-2) Figure of the best structures in 3D, the reference next to each agent.
+2) Still figure of the final structures for the paper, the reference next to
+each arm.
 3) The paper.
 
 Left for future work: a blend weight that changes during a run, other behaviour
-summaries, other tasks, real physics. A gif of a run if there is time.
+summaries, other tasks, real physics.
 
 ## Limitations
 
