@@ -52,7 +52,8 @@ Sigma is set so a mutation is about 10% of a starting weight for both agents,
 There are four arms. Random, objective (selects on reach), novelty (selects on
 how different a structure is from past ones), and blend (half each, both scaled
 to 0 to 1 first). Each generation the top half survive and are copied with small
-random changes to their weights.
+random changes to their weights. The best agent by the arm's own score is also
+kept unchanged, so only objective's best reach per generation can never drop.
 
 Novelty compares structures using five numbers each: block count, height, height
 of the centre of mass, distance of the furthest block from the base, and average
@@ -259,7 +260,6 @@ next to existing blocks.
 
 The paper compares search method and agent together. The plan is fixed here so
 it does not keep growing.
-* maybe also test slightly different elitism func/approach? change elitism from internal weight to keeping only ones with furthest reach
 * maybe change gifs to select random structure from gen best with highest score for a more interactive gif
 
 1) Finish 10 seeds each of objectivelong and blendlong, which leaves
@@ -270,7 +270,8 @@ each arm.
 3) The paper.
 
 Left for future work: a blend weight that changes during a run, other behaviour
-summaries, other tasks, real physics.
+summaries, other tasks, real physics, novelty with an elite kept by reach,
+MAP-Elites.
 
 ## Limitations
 
@@ -284,6 +285,7 @@ balanced.
 differently.
 7) Most runs are 200 generations. The 2000 generation runs were still climbing
 at the end, so where the arms would level off is not known.
+8) The novelty settings (k, archive threshold) were not tuned.
 
 ## References
 
@@ -296,3 +298,16 @@ at the end, so where the arms would level off is not known.
   Algorithms. GECCO.
 - Kistemaker & Whiteson (2011). Critical Factors in the Performance of Novelty
   Search. GECCO.
+- Lehman & Stanley (2008). Exploiting Open-Endedness to Solve Problems Through
+  the Search for Novelty. ALIFE XI.
+- Cuccu & Gomez (2011). When Novelty Is Not Enough. EvoApplications.
+- Such et al. (2017). Deep Neuroevolution: Genetic Algorithms Are a Competitive
+  Alternative for Training Deep Neural Networks for Reinforcement Learning.
+- Conti et al. (2018). Improving Exploration in Evolution Strategies for Deep
+  Reinforcement Learning via a Population of Novelty-Seeking Agents. NeurIPS.
+- Mordvintsev et al. (2020). Growing Neural Cellular Automata. Distill.
+- Grbic et al. (2021). EvoCraft: A New Challenge for Open-Endedness.
+- Sudhakaran et al. (2021). Growing 3D Artefacts and Functional Machines with
+  Neural Cellular Automata. ALIFE.
+- Cliff (1993). Dominance Statistics: Ordinal Analyses to Answer Ordinal
+  Questions. Psychological Bulletin.
