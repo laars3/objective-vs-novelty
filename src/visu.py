@@ -53,8 +53,6 @@ def still(names, ref, out_path):
     plotter.add_text("reference, reach 11", font="arial", font_size=10, color="black")
     plotter.link_views()
 
-
-
     for i in range(len(names)):
         pos = i + 1
         plotter.subplot(pos//3, pos % 3)
@@ -66,6 +64,9 @@ def still(names, ref, out_path):
         render(blocks_to_grid(data["best_blocks"]), plotter)
 
         plotter.add_text(f"{names[i]}, reach {data['best_so_far'][-1]}", font="arial", font_size=10, color="black")
+
+    plotter.screenshot(out_path)
+    plotter.close()
 
 
 def render(grid, plotter):
@@ -92,13 +93,16 @@ if __name__ == "__main__":
     import os
 
     os.makedirs("gifs", exist_ok=True, )
+    os.makedirs("stills", exist_ok=True)
+
     env=Environment((24,8,12))
 
     gif_names= ("objectivelocal_bridge_s20", "objectivenolean_bridge_s2", "objective_bridge_s23", "novelty_bridge_s22", "blend_bridge_s28")
 
     ref=env.best_possible_bridge(40)
 
-    for gif in gif_names:
-        gify("frames/"+ gif+".json", "gifs/" + gif + ".gif", ref)
+    # for gif in gif_names:
+    #     gify("frames/"+ gif+".json", "gifs/" + gif + ".gif", ref)
 
+    still(gif_names,ref, "stills/final_strucs.png")
     print("success")
