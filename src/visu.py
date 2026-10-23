@@ -43,6 +43,29 @@ def gify(frames_path, gif_path, ref):
 
     gifplot.close()
 
+def still(names, ref, out_path):
+    plotter = pv.Plotter(shape=(2,3),off_screen=True,window_size=(1200,800))
+    plotter.background_color="white"
+
+    plotter.subplot(0,0)
+
+    render(ref, plotter)
+    plotter.add_text("reference, reach 11", font="arial", font_size=10, color="black")
+    plotter.link_views()
+
+
+
+    for i in range(len(names)):
+        pos = i + 1
+        plotter.subplot(pos//3, pos % 3)
+
+        runs_path = f"runs/{names[i]}.json"
+        with open(runs_path) as f:
+            data =json.load(f)
+
+        render(blocks_to_grid(data["best_blocks"]), plotter)
+
+        plotter.add_text(f"{names[i]}, reach {data['best_so_far'][-1]}", font="arial", font_size=10, color="black")
 
 
 def render(grid, plotter):
