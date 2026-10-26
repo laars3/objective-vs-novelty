@@ -8,9 +8,9 @@ score_f = "bridge" # possible score functions (bridge, tower)
 tasks = {"tower": tower_score, "bridge":bridge_score}
 
 
-run_config = dict(steps=40, sigma=0.03, generations=200)
+run_config = dict(steps=40, sigma=0.002, generations=2000)
 
-arms = [("objectivenolean", LocalAgentNoCOM, "objective", bc)]
+arms = [("objectivelong", Agent, "objective", bc), ("blendlong", Agent, "blend", bc)]
 
 def config_names(config, run_config): # swaps functions and classes for their names so json can save them
     names = {}

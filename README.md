@@ -151,7 +151,7 @@ Blend seed 28. The structure also keeps changing, at reach 5 for most of the
 run and 6 in the last generations.
 
 Objective and blend were rerun for 2000 generations, 5 objective seeds and 7
-blend seeds so far. The first 200 generations match the 200 generation runs
+blend seeds. The first 200 generations match the 200 generation runs
 exactly.
 
 objectivelong 6 10 7 9 8, median 8
@@ -165,7 +165,10 @@ generation 1847. Every gain was one step at a time, with no sudden jump. Seed 2
 sat at 3 until generation 371 and ended at 7, so the objective collapses at 200
 generations look like slow starts. Blend gained at most 2 at a time. Blend is a
 little ahead on best reach and objective on mean reach. Neither difference is
-tested yet.
+significant, delta 0.34 and p = 0.38 on best reach, delta 0.43 and p = 0.27 on
+mean reach, with exact permutation tests. More seeds were not run. With effects
+this size about 25 seeds per arm would be needed, so these runs stay
+exploratory.
 
 Earlier bridge versions failed in two ways. On a 12 x 12 x 12 grid a random
 network could already reach the maximum of 5, so evolution had nothing to
@@ -262,12 +265,8 @@ The paper compares search method and agent together. The plan is fixed here so
 it does not keep growing.
 * maybe change gifs to select random structure from gen best with highest score for a more interactive gif
 
-1) Finish 10 seeds each of objectivelong and blendlong, which leaves
-objectivelong seeds 5 to 9 and blendlong seeds 7 to 9. A second machine first
-needs a check that it gives the same numbers.
-2) Still figure of the final structures for the paper, the reference next to
-each arm.
-3) The paper.
+1) for paper The still figure for it is in stills/
+2) Cut readme down to short summary once the paper is done
 
 Left for future work: a blend weight that changes during a run, other behaviour
 summaries, other tasks, real physics, novelty with an elite kept by reach,
