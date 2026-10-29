@@ -8,9 +8,13 @@ score_f = "bridge" # possible score functions (bridge, tower)
 tasks = {"tower": tower_score, "bridge":bridge_score}
 
 
-run_config = dict(steps=40, sigma=0.002, generations=2000)
+run_config = dict(steps=40, sigma=0.002, generations=200) # sigma 0.03 for LocalAgent and LocalAgentNoCOM
+n_seeds = 30
 
-arms = [("objectivelong", Agent, "objective", bc), ("blendlong", Agent, "blend", bc)]
+# other arms in the paper: ("noveltysplit", Agent, "novelty", bc_split), ("blendsplit", Agent, "blend", bc_split),
+# ("objectivelocal", LocalAgent, "objective", bc), ("noveltylocal", LocalAgent, "novelty", bc), ("blendlocal", LocalAgent, "blend", bc),
+# ("objectivenolean", LocalAgentNoCOM, "objective", bc), long runs are objective and blend with generations=2000
+arms = [("objective", Agent, "objective", bc), ("novelty", Agent, "novelty", bc), ("blend", Agent, "blend", bc), ("random", RandomAgent, "random", bc)]
 
 def config_names(config, run_config): # swaps functions and classes for their names so json can save them
     names = {}
@@ -49,7 +53,7 @@ def run_save(evolution, config, run_config, name):
 
 
 for name, agent_class, selection, bc_func in arms:
-    for seed in range(10):
+    for seed in range(n_seeds):
         path=f"runs/{name}_{score_f}_s{seed}.json"
         if os.path.exists(path):
             continue
